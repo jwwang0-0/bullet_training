@@ -45,13 +45,15 @@ class MySim(gym.Env):
         ## Observation Space
         #Option 01 Use a multi-binary to represent a image
         #Will be hard to connect to the pybullet simulation
-        #self.observation_space = spaces.MultiBinary([1000,25])
+        self.observation_space = spaces.MultiBinary([1000,25])
 
         #Option 02 Use Graph to Remember the location and Adjacency Matrix
         #Use Adjacency Matrix to reduce the computation time
         #TODO Consider if we should have randomized start and target in the future, but not for now
-        self.observation_space = graph.Graph(node_space=spaces.MultiDiscrete([1000,25]),
-                                             edge_space =None)
+        #Not enough examples for the graph example, as the graph dynamically change the sizes with learning
+        # self.observation_space = graph.Graph(node_space=spaces.MultiDiscrete([1000,25]),
+        #                                      edge_space =None)
+        self.block_list = []
 
 
     def step(self, action): 
@@ -65,21 +67,34 @@ class MySim(gym.Env):
         #Option 1 Pybullet
 
         #Option 2 Signed Distance Function
+
+        #Option 3 Simple 2D Check
+        
         
         ## TODO Check the Stability
         #Option 1 Pybullet
-        
-        #TODO Check the robot reachability with collision mesh
+            ## TODO Create the block element URDF
+        id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "block.urdf"),
+                            [x, 0, z])
+        self.block_list.append(id)
+        # Disable the groud block
+        #TODO Double check the co-efficients (use a test environment to check the speed threshold)
+        #p.changeDynamics(id,-1,...)
+        p.stepSimulation()
+        position, speed = p.getJointState(id, -1)[0:2]
+        if speed > 0.0001:
+            done = True
+        #LATER TODO Check the robot reachability with collision mesh
 
         #TODO Calculate the reward 
 
-        state = 1
+        # state = 1
 
-        if action == 2:
-            reward = 1
-        else:
-            reward = -1
-        done = True
+        # if action == 2:
+        #     reward = 1
+        # else:
+        #     reward = -1
+        # done = True
         info = {}
         return state, reward, done, info
     
@@ -104,12 +119,13 @@ class MySim(gym.Env):
             p.setRealTimeSimulation(0) #问题？？？ 这个应该选什么
         
         p = self._p
-        #TODO: Remove all blocks in the environment
+        #Remove all blocks in the environment
+        for id in self.block_list:
+            p.removeBody(id)
 
-        #TODO: Creat the Ground Node
-
-        #TODO: Return the ground node as the state / observation_space
-        return np.array(self.state)
+        #Return the ground node as the state / observation_space
+        self.state = np.zeros((1000, 25))
+        return self.state
     
     def render(self, mode='human', close=False):
     # Copied from the example
