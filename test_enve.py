@@ -42,7 +42,7 @@ class MySim(gym.Env):
         self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000),
                                          "z_pos":spaces.Discrete(25)})        
         
-        ## Observation Space
+        ## Observation Space, need the boundary information
         #Option 01 Use a multi-binary to represent a image
         #Will be hard to connect to the pybullet simulation
         self.observation_space = spaces.MultiBinary([1000,25])
@@ -102,7 +102,7 @@ class MySim(gym.Env):
     #    print("-----------reset simulation---------------")
 
     # TODO: move to assembly env below
-        # if self._physics_client_id < 0:
+        if self._physics_client_id < 0:
         #     if self._renders:
         #         # self._p = bc.BulletClient(connection_mode=p2.GUI)
         #     else:

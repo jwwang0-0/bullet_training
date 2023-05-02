@@ -8,6 +8,8 @@ class AssemblySpace():
     def __init__(self, *arg) -> None:
         # prepare the scene or the physical environment
 
+        self.histroy = ...
+
         # if self._physics_client_id < 0:
         #     if self._renders:
         #         # self._p = bc.BulletClient(connection_mode=p2.GUI)
@@ -27,6 +29,12 @@ class AssemblySpace():
         # make a new client
         pass
 
+    def restore(self):
+        pass
+
+    def clear(self):
+        pass
+
     def _action(self):
         # perform actions  in the physical environment
         # possibly the robot actions as well later
@@ -40,4 +48,8 @@ class AssemblySpace():
     def interact(self, *args):
         # perform actions in the physical environment
         # then, output the required information
-        pass
+        """
+        output: a dictionary of checks
+        """
+        self._action()
+        return self._get_env_output()
