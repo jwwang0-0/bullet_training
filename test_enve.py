@@ -100,13 +100,16 @@ class MySim(gym.Env):
     
     def reset(self):
     #    print("-----------reset simulation---------------")
-        if self._physics_client_id < 0:
-            if self._renders:
-                self._p = bc.BulletClient(connection_mode=p2.GUI)
-            else:
-                self._p = bc.BulletClient()
-            self._physics_client_id = self._p._client
-            p = self._p
+
+    # TODO: move to assembly env below
+        # if self._physics_client_id < 0:
+        #     if self._renders:
+        #         # self._p = bc.BulletClient(connection_mode=p2.GUI)
+        #     else:
+        #         # self._p = bc.BulletClient()
+        #     self._physics_client_id = self._p._client
+        #     p = self._p
+        
             p.resetSimulation()
 
             # Import Ground URDF
