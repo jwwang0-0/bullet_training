@@ -3,6 +3,8 @@ import numpy as np
 import pybullet as p2
 import pybullet_data
 from pybullet_utils import bullet_client as bc
+HERE = os.path.dirname(__file__)
+DATA = os.path.join(HERE, "DATA")
 
 #Block Element
 class Block():
@@ -23,7 +25,6 @@ class Assembly():
         self._renders = render
         self.image = np.zeros((1000, 25))
         #TODO Implement a Graph in the future
-
 
         # create a physical client
         if self._physics_client_id < 0:
@@ -83,7 +84,7 @@ class Assembly():
         self.clear()
         for block in self.block_list:
             assert isinstance(block,Block), f"block is not a Block instance"
-            id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "block.urdf"),
+            id = p.loadURDF(os.path.join(DATA, "block.urdf"),
                                 [block.pos[0], block.pos[1], block.pos[2]])
             block.id = id
             
@@ -129,13 +130,15 @@ class Assembly():
 
         ## Stabiltiy Check
         p.stepSimulation()
-        position, speed = p.getJointState(id, -1)[0:2]
-        if speed > 0.0001:
-            info["stabiltiy"] = False
-        else:
-            info["stabiltiy"] = True
-        ## Reach the target or not
-        pass
+        id = self.block_list[-1].id
+        #position, speed = p.getJointState(id, 0)[0:2]
+        speed = p.getBaseVelocity(id)
+        # if speed > 0.0001:
+        #     info["stabiltiy"] = False
+        # else:
+        #     info["stabiltiy"] = True
+        ## TODO Reach the target or not
+        print(speed)
 
     def interact(self, *args):
         # perform actions in the physical environment
