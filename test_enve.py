@@ -47,7 +47,7 @@ class MySim(gym.Env):
         info = {}
 
         #Termination condition
-        if done = True:
+        if done == True:
             pass
 
         return state, reward, done, info
