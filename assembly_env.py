@@ -1,18 +1,29 @@
 import os
+import numpy as np
 import pybullet as p2
 import pybullet_data
 from pybullet_utils import bullet_client as bc
 
+#Block Element
+class Block():
 
-class AssemblySpace():
+    def __init__(self, id, pos):
+        self.id = id
+        self.pos = pos
 
-    def __init__(self, *arg) -> None:
+#Assembly Element
+class Assembly():
+
+    def __init__(self, render = False) -> None:
         # prepare the scene or the physical environment
 
         self.block_list = []
         self.sceneobj_list = []
         self._physics_client_id = -1
-        self._renders = True
+        self._renders = render
+        self.image = np.zeros((1000, 25))
+        #TODO Implement a Graph in the future
+
 
         # create a physical client
         if self._physics_client_id < 0:
@@ -25,7 +36,7 @@ class AssemblySpace():
             p.resetSimulation()
 
             # Import Ground URDF
-            p.loadURDF(os.path.join(self._urdfRoot, "plane.urdf"), [0, 0, -1])
+            p.loadURDF(os.path.join(pybullet_data.getDataPath(), "plane.urdf"), [0, 0, 0])
             
             # Set Gravity Simulation
             p.setGravity(0, 0, -9.8)
@@ -34,8 +45,8 @@ class AssemblySpace():
             p.setRealTimeSimulation(0) #问题？？？ 这个应该选什么
         else:
             self.clear()
-        # create a scene
-        self.boundry_condition()
+        # TODO create a scene
+        #self.boundry_condition()
 
         ## Set-up Renders
         # self._renders = renders
@@ -53,31 +64,77 @@ class AssemblySpace():
 
 
     def close(self):
+        self.block_list.clear()
+        self.sceneobj_list.clear()
+        self.image = -1
         if self._physics_client_id >= 0:
             self._p.disconnect()
         self._physics_client_id = -1
+
+
 
     def renew(self):
         # make a new client
         pass
 
     def restore(self):
-        pass
+        # restore the environment if the block fails
+        p = self._p
+        self.clear()
+        for block in self.block_list:
+            assert isinstance(block,Block), f"block is not a Block instance"
+            id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "block.urdf"),
+                                [block.pos[0], block.pos[1], block.pos[2]])
+            block.id = id
+            
 
     def clear(self):
         #clear all blocks in the scene
+        #but still remember the history and image 
         p = self._p
-        for id in self.block_list:
-            p.removeBody(id)
+        for block in self.block_list:
+            assert isinstance(block,Block), f"block is not a Block instance"
+            p.removeBody(block.id)
 
-    def _action(self):
-        # perform actions  in the physical environment
+    def _action(self, pos):
+        # perform actions in the physical environment
         # possibly the robot actions as well later
-        pass
+        p = self._p
+        id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "block.urdf"),
+                            [pos[0], pos[1], pos[2]]) 
+        block = Block(id=id,pos=pos)      
+        self.block_list.append(block)
 
-    def _get_env_output(self):
+
+    def _get_env_output(self,pos):
         # calculate the information about the environmnet
         # then output the information/checks
+        p = self._p
+        info = {"collision": None, "robot": None, "stabiltiy":None}
+
+        ## Collision Check
+        # Mathmatrical Implementation
+        # 2d image implementation
+
+        for x in range(pos[0]-40,pos[0]+40):
+            if self.image[x][pos[2]] == 1:
+                info["collision"] = True
+            self.image[x][pos[2]] = 1
+        
+        # Pybullet implementation
+        # Need to be tested during simulation
+        # p.getOverlappingObjects()
+
+        ## TODO Robot Feasibility Check
+
+        ## Stabiltiy Check
+        p.stepSimulation()
+        position, speed = p.getJointState(id, -1)[0:2]
+        if speed > 0.0001:
+            info["stabiltiy"] = False
+        else:
+            info["stabiltiy"] = True
+        ## Reach the target or not
         pass
 
     def interact(self, *args):
