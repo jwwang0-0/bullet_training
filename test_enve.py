@@ -8,7 +8,7 @@ import pybullet_data
 from pybullet_utils import bullet_client as bc
 
 class MySim(gym.Env):
-    #Not necessary
+
     #For rendering
     metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
 
@@ -25,101 +25,37 @@ class MySim(gym.Env):
         self._configure()
 
         ## Action Space 
-        #Assume all the bricks are sizes 80mm x 40mm 
-        #Assume we are working in a 1m x 1m environment (based on two abb gofa robot, adjustable) 
-        # 1m / 40mm = 25 As a result, Z is discretized into 25 
-        # Future Implementation (Orientation? Y-axis)
-        # self.x_min = -0.5
-        # self.x_max = 0.5
-        # self.z_min = 0
-        # self.z_max = 1
-
-        #Option 01 Continuous
-        # self.action_space = spaces.Dict({"x_pos":spaces.Box(low=self.x_min,high=self.x_max),
-        #                                  "z_pos":spaces.Discrete(25)})
-
-        #Option 02
         self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000),
                                          "z_pos":spaces.Discrete(25)})        
         
         ## Observation Space, need the boundary information
-        #Option 01 Use a multi-binary to represent a image
-        #Will be hard to connect to the pybullet simulation
         self.observation_space = spaces.MultiBinary([1000,25])
 
-        #Option 02 Use Graph to Remember the location and Adjacency Matrix
-        #Use Adjacency Matrix to reduce the computation time
-        #TODO Consider if we should have randomized start and target in the future, but not for now
-        #Not enough examples for the graph example, as the graph dynamically change the sizes with learning
-        # self.observation_space = graph.Graph(node_space=spaces.MultiDiscrete([1000,25]),
-        #                                      edge_space =None)
         self.block_list = []
 
 
     def step(self, action): 
+
         p = self._p
-        #Get Location of the Block(x,y,z)
-        x = action["x_pos"]/1000
-        y = 0
-        z = action["z_pos"]*25+20  
 
-        ## TODO Check the collision
-        #Option 1 Pybullet
+        #Sample next action  
 
-        #Option 2 Signed Distance Function
+        #Interact with the PyBullet env 
 
-        #Option 3 Simple 2D Check
-        
-        
-        ## TODO Check the Stability
-        #Option 1 Pybullet
-            ## TODO Create the block element URDF
-        id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "block.urdf"),
-                            [x, 0, z])
-        self.block_list.append(id)
-        # Disable the groud block
-        #TODO Double check the co-efficients (use a test environment to check the speed threshold)
-        #p.changeDynamics(id,-1,...)
-        p.stepSimulation()
-        position, speed = p.getJointState(id, -1)[0:2]
-        if speed > 0.0001:
-            done = True
-        #LATER TODO Check the robot reachability with collision mesh
+        #Calculate the reward 
 
-        #TODO Calculate the reward 
-
-        # state = 1
-
-        # if action == 2:
-        #     reward = 1
-        # else:
-        #     reward = -1
-        # done = True
         info = {}
+
+        #Termination condition
+        if done = True:
+            pass
+
         return state, reward, done, info
     
     def reset(self):
-    #    print("-----------reset simulation---------------")
-
-    # TODO: move to assembly env below
-        if self._physics_client_id < 0:
-        #     if self._renders:
-        #         # self._p = bc.BulletClient(connection_mode=p2.GUI)
-        #     else:
-        #         # self._p = bc.BulletClient()
-        #     self._physics_client_id = self._p._client
-        #     p = self._p
+        #print("-----------reset simulation---------------")
         
-            p.resetSimulation()
-
-            # Import Ground URDF
-            p.loadURDF(os.path.join(self._urdfRoot, "plane.urdf"), [0, 0, -1])
-            
-            # Set Gravity Simulation
-            p.setGravity(0, 0, -9.8)
-            self.timeStep = 0.02
-            p.setTimeStep(self.timeStep)
-            p.setRealTimeSimulation(0) #问题？？？ 这个应该选什么
+        p.resetSimulation()
         
         p = self._p
         #Remove all blocks in the environment
@@ -128,6 +64,7 @@ class MySim(gym.Env):
 
         #Return the ground node as the state / observation_space
         self.state = np.zeros((1000, 25))
+
         return self.state
     
     def render(self, mode='human', close=False):
@@ -165,18 +102,13 @@ class MySim(gym.Env):
         rgb_array = np.reshape(np.array(px), (self._render_height, self._render_width, -1))
         rgb_array = rgb_array[:, :, :3]
         return rgb_array
-
-
     
     def seed(self, seed=None):
         pass
 
-    # Not necessary
     # Close the Simulation 
     def close(self):
-        if self._physics_client_id >= 0:
-            self._p.disconnect()
-        self._physics_client_id = -1
+        pass
 
 if __name__ == "__main__":
     from stable_baselines.common.env_checker import check_env 

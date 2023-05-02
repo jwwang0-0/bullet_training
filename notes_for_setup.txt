@@ -1,0 +1,11 @@
+1. elements in the environment:
+- Assume all the bricks are sizes 80mm x 40mm 
+- Assume we are working in a 1m x 1m environment (based on two abb gofa robot, adjustable) 
+- 1m / 40mm = 25 As a result, Z is discretized into 25 
+
+2. for states (i.e. observation space)
+- Option: Use Graph to Remember the location and Adjacency Matrix,
+    Use Adjacency Matrix to reduce the computation time
+        # self.observation_space = graph.Graph(node_space=spaces.MultiDiscrete([1000,25]),
+        #                                      edge_space =None)
+
