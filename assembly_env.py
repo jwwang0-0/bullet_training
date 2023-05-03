@@ -94,9 +94,12 @@ class Assembly():
             self._p.disconnect()
         self._physics_client_id = -1
 
-    def renew(self):
-        # make a new client
-        pass
+    def reset(self):
+        #Remove all blocks in the environment
+
+        p = self._p
+        for id in self.block_list:
+            p.removeBody(id)
 
     def restore(self):
         # restore the environment if the block fails
@@ -195,9 +198,9 @@ class Assembly():
         p.setRealTimeSimulation(1)
 
 
-    def interact(self, *args):
+    def interact(self, ls_pos):
         # perform actions in the physical environment
-        # then, output the required information
+        # then, output the checks and distance
         """
         output: a dictionary of checks
         """
