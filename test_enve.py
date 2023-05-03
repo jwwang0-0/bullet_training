@@ -30,18 +30,18 @@ class MySim(gym.Env):
     def _get_observation(self):
         # return some observation data
         # TODO: need to define
-        return None
+        return np.random.randint(0, 1, size=(1000,25), dtype='int8')
     
     def _get_info(self):
         # return some auxiliary data
         # TODO: need to define
-        return None
+        return {}
     
-    def _check_termination(dict_check):
+    def _check_termination(self, dict_check):
         # return True if a termination criteria is met
         # criteria: collision or instable
         ls_check = [dict_check.get('collision'), dict_check.get('instability')]
-        return (sum(ls_check) > 0)
+        return np.sum(ls_check) > 0
 
     def step(self, action): 
 
@@ -55,14 +55,14 @@ class MySim(gym.Env):
         reward = param_material + param_distance * output.get('distance')
 
         #Check termination
-        termination = self._check_termination(output)
+        termination = self._check_termination(output) is True
 
         return self._get_observation(), reward, termination, self._get_info()
     
     def reset(self):
         self.assembly_env.reset()       
         #print("-----------reset simulation---------------")
-        return self._get_observation(), self._get_info()
+        return self._get_observation()
     
     def render(self, mode='human', close=False):
     # Copied from the example
@@ -105,8 +105,8 @@ class MySim(gym.Env):
         pass
 
 if __name__ == "__main__":
-    from stable_baselines.common.env_checker import check_env 
     # 如果你安装了pytorch，则使用上面的，如果你安装了tensorflow，则使用from stable_baselines.common.env_checker import check_env
-    # from stable_baselines3.common.env_checker import check_env
+    from stable_baselines3.common.env_checker import check_env
+    # from stable_baselines.common.env_checker import check_env 
     env = MySim()
     check_env(env)
