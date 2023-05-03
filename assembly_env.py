@@ -1,4 +1,5 @@
 import os
+import math
 import numpy as np
 import pybullet as p2
 import pybullet_data
@@ -6,12 +7,34 @@ from pybullet_utils import bullet_client as bc
 HERE = os.path.dirname(__file__)
 DATA = os.path.join(HERE, "DATA")
 
+t_step = 0.02
+##################################################
+#################Utility Function#################
+##################################################
+
+#Speed Magnitude Calculation
+def speed_mag(data):
+    mod_l = math.pow(data[0][0],2)+math.pow(data[0][1],2)+math.pow(data[0][2],2)
+    mod_a = math.pow(data[1][0],2)+math.pow(data[1][1],2)+math.pow(data[1][2],2)
+    return math.pow(mod_l,0.5), math.pow(mod_a,0.5)  
+
+#Distance in Space
+def distance(pos1, pos2):
+    dsquare = 0
+    for i,_ in enumerate(pos1):
+        dsquare += math.pow(pos1[i]-pos2[i],2)
+    return math.pow(dsquare,0.5)
+
 #Block Element
 class Block():
 
     def __init__(self, id, pos):
         self.id = id
         self.pos = pos
+        self.quaternion = (0,0,0,1)
+##################################################
+#################### Assembly ####################
+##################################################
 
 #Assembly Element
 class Assembly():
@@ -41,9 +64,9 @@ class Assembly():
             
             # Set Gravity Simulation
             p.setGravity(0, 0, -9.8)
-            self.timeStep = 0.02
+            self.timeStep = t_step
             p.setTimeStep(self.timeStep)
-            p.setRealTimeSimulation(0) #问题？？？ 这个应该选什么
+            p.setRealTimeSimulation(0) #if it is "1" it will be locked
         else:
             self.clear()
         # TODO create a scene
@@ -63,7 +86,6 @@ class Assembly():
         #define the target, obstacle
         pass
 
-
     def close(self):
         self.block_list.clear()
         self.sceneobj_list.clear()
@@ -71,8 +93,6 @@ class Assembly():
         if self._physics_client_id >= 0:
             self._p.disconnect()
         self._physics_client_id = -1
-
-
 
     def renew(self):
         # make a new client
@@ -101,7 +121,7 @@ class Assembly():
         # perform actions in the physical environment
         # possibly the robot actions as well later
         p = self._p
-        id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "block.urdf"),
+        id = p.loadURDF(os.path.join(DATA, "block.urdf"),
                             [pos[0], pos[1], pos[2]]) 
         block = Block(id=id,pos=pos)      
         self.block_list.append(block)
@@ -111,34 +131,55 @@ class Assembly():
         # calculate the information about the environmnet
         # then output the information/checks
         p = self._p
-        info = {"collision": None, "robot": None, "stabiltiy":None}
+        info = {"collision": None, "robot": None, "instability":None}
 
-        ## Collision Check
+        #################Step 0: Collision Check#################
+
         # Mathmatrical Implementation
         # 2d image implementation
-
-        for x in range(pos[0]-40,pos[0]+40):
-            if self.image[x][pos[2]] == 1:
+        index = [int(pos[0]*1000) , 0 , int((pos[2]*1000-20)/40)]  
+        for x in range(index[0]-40,index[0]+40):
+            if self.image[x][index[2]] == 1:
                 info["collision"] = True
-            self.image[x][pos[2]] = 1
+            self.image[x][index[2]] = 1
+        if info["collision"] == None:
+            info["collision"] = False
         
         # Pybullet implementation
         # Need to be tested during simulation
         # p.getOverlappingObjects()
 
-        ## TODO Robot Feasibility Check
+        ############## TODO Step 1: Robot Check####################
 
-        ## Stabiltiy Check
-        p.stepSimulation()
+
+        ############## Step 2: Stabiltiy Check#####################
         id = self.block_list[-1].id
-        #position, speed = p.getJointState(id, 0)[0:2]
-        speed = p.getBaseVelocity(id)
-        # if speed > 0.0001:
-        #     info["stabiltiy"] = False
-        # else:
-        #     info["stabiltiy"] = True
-        ## TODO Reach the target or not
-        print(speed)
+        pos = self.block_list[-1].pos
+        orien = self.block_list[-1].quaternion
+        # lspeed_0, aspeed_0 = speed_mag(p.getBaseVelocity(id))
+        for i in range(50):
+            p.stepSimulation()
+        (pos2, orien2) = p.getBasePositionAndOrientation(id)
+        d = distance(pos, pos2)
+        o = distance(orien,orien2)
+        info["instability"] = True if max(d,o)>0.01 else False
+
+        # lspeed, aspeed = speed_mag(p.getBaseVelocity(id))
+        # a_l = (lspeed-lspeed_0) / t_step
+        # a_a = (aspeed-aspeed_0) / t_step
+        # Debug: Check the p,v,a
+        # print("Linear Velocity",'{:.5f}'.format(lspeed))
+        # print("Position",position)
+        # print("Linear Acceleration",'{:.5f}'.format(a_l))
+        # print("Angular Velocity",'{:.5f}'.format(aspeed))
+        # print("Angular Acceleration",'{:.5f}'.format(a_a))
+        # print("Orientation", orientation)
+
+
+        ############## TODO Step 3: Target Check###################
+        return info
+        
+
 
     def interact(self, *args):
         # perform actions in the physical environment
@@ -148,3 +189,4 @@ class Assembly():
         """
         self._action()
         return self._get_env_output()
+    
