@@ -1,11 +1,10 @@
-import os
 import gym
 import numpy as np
 from gym import spaces
 import graph
-import pybullet as p2
-import pybullet_data
-from pybullet_utils import bullet_client as bc
+
+from assembly_env import Assembly
+
 
 class MySim(gym.Env):
 
@@ -14,58 +13,56 @@ class MySim(gym.Env):
 
     def __init__(self, renders=False):
         
-        ## Set-up bullet physics server (Need to be rechecked later)
-        self._renders = renders
-        self._render_height = 200
-        self._render_width = 320
-        self._physics_client_id = -1
-        self.seed()
-        #    self.reset()
-        self.viewer = None
-        self._configure()
+        # Set-up bullet physics server (Need to be rechecked later)
+        # TODO: any parameters needed by init Assembly?
+        self.assembly_env = Assembly(render=renders)
 
-        ## Action Space 
+        # Action Space 
         self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000),
                                          "z_pos":spaces.Discrete(25)})        
         
-        ## Observation Space, need the boundary information
+        # Observation Space, need the boundary information
         self.observation_space = spaces.MultiBinary([1000,25])
 
+        # Keep a history of the assembled blocks, maybe not needed here
         self.block_list = []
 
+    def _get_observation(self):
+        # return some observation data
+        # TODO: need to define
+        return None
+    
+    def _get_info(self):
+        # return some auxiliary data
+        # TODO: need to define
+        return None
+    
+    def _check_termination(dict_check):
+        # return True if a termination criteria is met
+        # criteria: collision or instable
+        ls_check = [dict_check.get('collision'), dict_check.get('instability')]
+        return (sum(ls_check) > 0)
 
     def step(self, action): 
 
-        p = self._p
-
-        #Sample next action  
-
         #Interact with the PyBullet env 
+        arg_action = [action.get('x_pos', 0), action.get('y_pos', 0), action.get('z_pos', 0)]
+        output = self.assembly_env.interact(arg_action)
 
-        #Calculate the reward 
+        #Calculate the reward
+        param_material = -1
+        param_distance = 1
+        reward = param_material + param_distance * output.get('distance')
 
-        info = {}
+        #Check termination
+        termination = self._check_termination(output)
 
-        #Termination condition
-        if done == True:
-            pass
-
-        return state, reward, done, info
+        return self._get_observation(), reward, termination, self._get_info()
     
     def reset(self):
+        self.assembly_env.reset()       
         #print("-----------reset simulation---------------")
-        
-        p.resetSimulation()
-        
-        p = self._p
-        #Remove all blocks in the environment
-        for id in self.block_list:
-            p.removeBody(id)
-
-        #Return the ground node as the state / observation_space
-        self.state = np.zeros((1000, 25))
-
-        return self.state
+        return self._get_observation(), self._get_info()
     
     def render(self, mode='human', close=False):
     # Copied from the example
@@ -103,9 +100,6 @@ class MySim(gym.Env):
         rgb_array = rgb_array[:, :, :3]
         return rgb_array
     
-    def seed(self, seed=None):
-        pass
-
     # Close the Simulation 
     def close(self):
         pass
