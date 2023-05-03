@@ -7,7 +7,7 @@ from pybullet_utils import bullet_client as bc
 HERE = os.path.dirname(__file__)
 DATA = os.path.join(HERE, "DATA")
 
-t_step = 0.02
+t_step = 1/240
 ##################################################
 #################Utility Function#################
 ##################################################
@@ -118,11 +118,12 @@ class Assembly():
             p.removeBody(block.id)
 
     def _action(self, pos):
-        # perform actions in the physical environment
-        # possibly the robot actions as well later
+        # perform add block action in the physical environment
+        # not doing simulation 
         p = self._p
         id = p.loadURDF(os.path.join(DATA, "block.urdf"),
                             [pos[0], pos[1], pos[2]]) 
+        #print(p.getDynamicsInfo(id,-1))
         block = Block(id=id,pos=pos)      
         self.block_list.append(block)
 
@@ -137,7 +138,7 @@ class Assembly():
 
         # Mathmatrical Implementation
         # 2d image implementation
-        index = [int(pos[0]*1000) , 0 , int((pos[2]*1000-20)/40)]  
+        index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
         for x in range(index[0]-40,index[0]+40):
             if self.image[x][index[2]] == 1:
                 info["collision"] = True
@@ -153,17 +154,27 @@ class Assembly():
 
 
         ############## Step 2: Stabiltiy Check#####################
+        # Pybullet simulation
+        # If it is unstable, restore the environment
+
         id = self.block_list[-1].id
         pos = self.block_list[-1].pos
         orien = self.block_list[-1].quaternion
         # lspeed_0, aspeed_0 = speed_mag(p.getBaseVelocity(id))
-        for i in range(50):
+        for i in range(240):
             p.stepSimulation()
         (pos2, orien2) = p.getBasePositionAndOrientation(id)
         d = distance(pos, pos2)
         o = distance(orien,orien2)
-        info["instability"] = True if max(d,o)>0.01 else False
-
+        if d > 0.05:
+            info["instability"] = True
+            self.restore() 
+        elif o > 0.1:
+            info["instability"] = True 
+            self.restore()            
+        else:
+            info["instability"] = False
+        #print(d,o)
         # lspeed, aspeed = speed_mag(p.getBaseVelocity(id))
         # a_l = (lspeed-lspeed_0) / t_step
         # a_a = (aspeed-aspeed_0) / t_step
@@ -179,6 +190,9 @@ class Assembly():
         ############## TODO Step 3: Target Check###################
         return info
         
+    def realtime(self):
+        p = self._p
+        p.setRealTimeSimulation(1)
 
 
     def interact(self, *args):
