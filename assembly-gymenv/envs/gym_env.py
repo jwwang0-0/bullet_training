@@ -9,9 +9,9 @@ from assembly_env import Assembly
 class MySim(gym.Env):
 
     #For rendering
-    metadata = {'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50}
+    metadata = {'render.modes': ['human', 'rgb_array'], "render_fps": 4}
 
-    def __init__(self, renders=False):
+    def __init__(self, renders=None):
         
         # Set-up bullet physics server (Need to be rechecked later)
         # TODO: any parameters needed by init Assembly?
@@ -28,8 +28,8 @@ class MySim(gym.Env):
         self.block_list = []
 
     def _get_observation(self):
-        # return some observation data
-        # TODO: need to define
+        # return the occupancy grid as a boolean matrix
+        # TODO
         return np.random.randint(0, 1, size=(1000,25), dtype='int8')
     
     def _get_info(self):
@@ -65,6 +65,7 @@ class MySim(gym.Env):
         return self._get_observation()
     
     def render(self, mode='human', close=False):
+
     # Copied from the example
         if mode == "human":
             self._renders = True
