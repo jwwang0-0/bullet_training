@@ -4,8 +4,8 @@ import numpy as np
 import pybullet as p2
 import pybullet_data
 from pybullet_utils import bullet_client as bc
-HERE = os.path.dirname(__file__)
-DATA = os.path.join(HERE, "DATA")
+# HERE = os.path.dirname(__file__)
+DATA = "../DATA/"
 
 t_step = 1/240
 ##################################################
@@ -131,7 +131,7 @@ class Assembly():
         self.block_list.append(block)
 
 
-    def _get_env_output(self,pos):
+    def _get_env_output(self, pos):
         # calculate the information about the environmnet
         # then output the information/checks
         p = self._p
@@ -142,12 +142,14 @@ class Assembly():
         # Mathmatrical Implementation
         # 2d image implementation
         index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
-        for x in range(index[0]-40,index[0]+40):
-            if self.image[x][index[2]] == 1:
-                info["collision"] = True
-            self.image[x][index[2]] = 1
-        if info["collision"] == None:
-            info["collision"] = False
+
+        #TODO: below gives error message in check_env
+        # for x in range(index[0]-40,index[0]+40):
+        #     if self.image[x][index[2]] == 1:
+        #         info["collision"] = True
+        #     self.image[x][index[2]] = 1
+        # if info["collision"] == None:
+        #     info["collision"] = False
         
         # Pybullet implementation
         # Need to be tested during simulation
@@ -204,6 +206,6 @@ class Assembly():
         """
         output: a dictionary of checks
         """
-        self._action()
-        return self._get_env_output()
+        self._action(ls_pos)
+        return self._get_env_output(ls_pos)
     

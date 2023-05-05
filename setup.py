@@ -1,6 +1,6 @@
 from setuptools import setup
 
 setup(
-    name="assembly-gymenv",
+    name="assembly_gymenv",
     version="0.0.1",
 )

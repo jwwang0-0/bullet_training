@@ -1,12 +1,11 @@
 import gym
 import numpy as np
 from gym import spaces
-import graph
 
 from assembly_env import Assembly
 
 
-class MySim(gym.Env):
+class AssemblyGymEnv(gym.Env):
 
     #For rendering
     metadata = {'render.modes': ['human', 'rgb_array'], "render_fps": 4}
@@ -40,7 +39,9 @@ class MySim(gym.Env):
     def _check_termination(self, dict_check):
         # return True if a termination criteria is met
         # criteria: collision or instable
-        ls_check = [dict_check.get('collision'), dict_check.get('instability')]
+        check_collision = False if dict_check.get('collision') is None else False
+        check_instability = False if dict_check.get('instability') is None else False
+        ls_check = [check_collision, check_instability]
         return np.sum(ls_check) > 0
 
     def step(self, action): 
@@ -52,7 +53,7 @@ class MySim(gym.Env):
         #Calculate the reward
         param_material = -1
         param_distance = 1
-        reward = param_material + param_distance * output.get('distance')
+        reward = param_material + param_distance * output.get('distance', np.inf)
 
         #Check termination
         termination = self._check_termination(output) is True
@@ -107,7 +108,7 @@ class MySim(gym.Env):
 
 if __name__ == "__main__":
     # 如果你安装了pytorch，则使用上面的，如果你安装了tensorflow，则使用from stable_baselines.common.env_checker import check_env
-    from stable_baselines3.common.env_checker import check_env
-    # from stable_baselines.common.env_checker import check_env 
-    env = MySim()
+    # from stable_baselines3.common.env_checker import check_env
+    from stable_baselines.common.env_checker import check_env 
+    env = AssemblyGymEnv()
     check_env(env)
