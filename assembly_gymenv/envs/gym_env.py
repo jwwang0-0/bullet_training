@@ -17,52 +17,50 @@ class AssemblyGymEnv(gym.Env):
     def __init__(self, renders=None):
         
         # Action Space 
-        self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH, start=HALF_WIDTH),
+        self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH*2),
                                          "z_pos":spaces.Discrete(25)})        
         
         # Observation Space, need the boundary information
-        self.observation_space = spaces.Dict({'image': spaces.MultiBinary([1000, 25])
-                                              ,'boundry': spaces.MultiDiscrete([1000, 25, 1000, 25])
-                                              })
+        img_element = np.array([4]*1000*25).reshape((1000,25))
+        self.observation_space = spaces.MultiDiscrete(img_element)
 
-        # Set-up bullet physics server (Need to be rechecked later)
-        boundry = ...
-        self.assembly_env = Assembly(self._boundry_to_pos(boundry), 
-                                     render=renders)
+        # Set-up bullet physics server, sample boundry
+        target = [[self._sample_to_posxy(498), 0, self._sample_to_posz(24)]] # a list of pos
+        self.assembly_env = Assembly(target, render=renders)
 
+    def _sample_target_pos(self):       
+        pass
+    
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
-        return {"image": self.assembly_env.get_image(),
-                "boundry": self.assembly_env.get_boundry()
-                }
+        return self.assembly_env.get_image()
     
     def _get_info(self):
         # return some auxiliary data
         # TODO: need to define
         return {}
     
-    def _check_termination(self):
-        # infeasible or reach target
-        # return True if a termination criteria is met
+    def _check_termination(self, info_output):
+        # return True if a infeasible or reach target
+        if not self.assembly_env._check_feasibility(info_output):
+            return True
+        if self.assembly_env._check_target():
+            return True
         return False
     
     def _sample_to_posxy(self, sample):
         return float(sample/1000)
     
     def _sample_to_posz(self, sample):
-        return (2* sample+1) * HALF_HEIGHT
+        return (2* sample+1) * HALF_HEIGHT /1000
     
     def _to_pos(self, sample_x, sample_z):
         return [self._sample_to_posxy(sample_x), 0, self._sample_to_posz(sample_z)]
 
-    def _boundry_to_pos(self, boundry):       
-        return [self._to_pos(boundry[0], boundry[1]), 
-                self._to_pos(boundry[2], boundry[3])]
-    
     def step(self, action): 
 
         #Interact with the PyBullet env
-        pos = self._to_pos(action.get('x_pos'), action.get('z_pos'))
+        pos = self._to_pos(action.get('x_pos')+HALF_WIDTH, action.get('z_pos'))
         output = self.assembly_env.interact(pos)
 
         #Calculate the reward
@@ -71,7 +69,7 @@ class AssemblyGymEnv(gym.Env):
         reward = param_material + param_distance * output.get('distance', np.inf)
 
         #Check termination
-        termination = self._check_termination(output) is True
+        termination = self._check_termination(output)
 
         return self._get_observation(), reward, termination, self._get_info()
     
