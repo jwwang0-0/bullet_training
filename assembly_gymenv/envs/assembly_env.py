@@ -8,6 +8,8 @@ from pybullet_utils import bullet_client as bc
 DATA = "../DATA/"
 
 t_step = 1/240
+HALF_WIDTH = 80/2
+HALF_HEIGHT = 20
 ##################################################
 #################Utility Function#################
 ##################################################
@@ -39,7 +41,7 @@ class Block():
 #Assembly Element
 class Assembly():
 
-    def __init__(self, ls_pos_boundry, render = False) -> None:
+    def __init__(self, target, render = False) -> None:
         # prepare the scene or the physical environment
 
         self.block_list = []
@@ -47,13 +49,13 @@ class Assembly():
         self._physics_client_id = -1
         self._renders = render
         self.image = np.zeros((1000, 25), dtype='int8')
-        #TODO Implement a Graph in the future
+        # TODO Implement a Graph in the future
 
         # create a physical client
         self.create_bullet_client()
 
         # TODO create a scene
-        self.set_boundry(ls_pos_boundry)
+        self.set_boundry(target)
 
         ## Set-up Renders
         # self._renders = renders
@@ -88,17 +90,33 @@ class Assembly():
         else:
             self.clear()
 
+    def _check_index(self,index):
+        #check if the input is out of image bound
+        #TODO define the threashold in the future
+        out_bound =  index[0] < 0 \
+                or index[0] > 999 \
+                or index[1] != 0 \
+                or index[2] < 0 \
+                or index[2] > 25
+        out_bound = bool(out_bound) 
+        return out_bound
+
+    def set_boundry(self, target):
+        """input: list of pos"""
+        #define the target
+        #TODO define the threashold in the future
+        self.target_list = []
+        for pos in target:
+            target_index = [round(pos[0]*1000) , round(pos[1]*1000) , round((pos[2]*1000-20)/40)]
+            if self._check_index(target_index) == True:
+                raise Exception("Boundry is not correctly defined")
+            else: 
+                self.target_list.append(target_index)
+                self.image[target_index[0]][target_index[2]] = 2
 
     def get_image(self):
         return self.image
 
-    def set_boundry(self, arr_boundry):
-        """input: list of pos"""
-        #define the target
-        pass
-
-    def get_boundry(self):
-        return self.boundry
 
     def close(self):
         self.block_list.clear()
@@ -145,20 +163,23 @@ class Assembly():
 
         # Mathmatrical Implementation
         # 2d image implementation
-        index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
+        center_index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
 
-        #TODO: below gives error message in check_env
-        # for x in range(index[0]-40,index[0]+40):
-        #     if self.image[x][index[2]] == 1:
-        #         info["collision"] = True
-        #     self.image[x][index[2]] = 1
-        # if info["collision"] == None:
-        #     info["collision"] = False
+        #check if the block is in the image bound
+        if True == self._check_index([center_index[0]-HALF_WIDTH,0,round((pos[2]*1000-20)/40)]):
+            raise Exception("Block is out of bound")
+        if True == self._check_index([center_index[0] + HALF_WIDTH - 1,0,round((pos[2]*1000-20)/40)]):
+            raise Exception("Block is out of bound")
+
+        # Check based on the image if there is collision
+        for x in [center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1]:
+            if self.image[x][center_index[2]] == 1:
+                return True
+        return False
         
         # Pybullet implementation
         # Need to be tested during simulation
         # self.p.getOverlappingObjects()
-        return None
     
     def _check_robot(self):
 
@@ -166,8 +187,8 @@ class Assembly():
 
         return False
 
-    def _check_stability(self, param):
-        ############## Step 2: Stabiltiy Check#####################
+    def _check_stability(self):
+
         # Pybullet simulation
         # If it is unstable, restore the environment
 
@@ -181,13 +202,13 @@ class Assembly():
         d = distance(pos, pos2)
         o = distance(orien,orien2)
         if d > 0.05:
-            param = True
+            instable = True
             self.restore() 
         elif o > 0.1:
-            param = True 
+            instable = True 
             self.restore()            
         else:
-            param = False
+            instable = False
         #print(d,o)
         # lspeed, aspeed = speed_mag(self.p.getBaseVelocity(id))
         # a_l = (lspeed-lspeed_0) / t_step
@@ -200,7 +221,7 @@ class Assembly():
         # print("Angular Acceleration",'{:.5f}'.format(a_a))
         # print("Orientation", orientation)
 
-        return param
+        return instable
     
     def _check_target(self):
         ############## TODO Step 3: Target Check###################
@@ -215,14 +236,20 @@ class Assembly():
 
         info.update({"collision": self._check_collision(pos)})
         info.update({"robot": self._check_robot(...)})
-        info.update({"instability": self._check_stability(info.get("instability"))})
+        info.update({"instability": self._check_stability()})
 
         return info
     
-    def _check_feasibility(self):
+    def _check_feasibility(info):
         # criteria: collision or instable
         # output True or False
-        return None
+        # True : Feasible
+        # False: infeasible
+        stop = info.get("collision")\
+            or info.get("robot") \
+            or info.get("instability")
+        stop = bool(stop)
+        return not(stop)
     
     def _update_image(self):
         # if the new block is feasible, then update the image (i.e. state/observation)
@@ -239,8 +266,9 @@ class Assembly():
         output: a dictionary of checks
         """
         self._action(pos)
-        output = self._get_env_output(pos)
-        if self._check_feasibility:
+        info = self._get_env_output(pos)
+        if self._check_feasibility(info):
             self._update_image()
-        return output
+            self._check_target()
+        return info
     
