@@ -48,7 +48,7 @@ class Assembly():
         self.sceneobj_list = []
         self._physics_client_id = -1
         self._renders = render
-        self.image = np.zeros((1000, 25), dtype=np.int8)
+        self.image = np.zeros((1000, 25), dtype=np.int64)
         self.complete = False
         # TODO Implement a Graph in the future
 

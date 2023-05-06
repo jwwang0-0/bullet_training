@@ -17,8 +17,9 @@ class AssemblyGymEnv(gym.Env):
     def __init__(self, renders=None):
         
         # Action Space 
-        self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH*2),
-                                         "z_pos":spaces.Discrete(25)})        
+        # self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH*2),
+        #                                  "z_pos":spaces.Discrete(25)})   
+        self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])     
         
         # Observation Space, need the boundary information
         img_element = np.array([4]*1000*25).reshape((1000,25))
@@ -60,7 +61,8 @@ class AssemblyGymEnv(gym.Env):
     def step(self, action): 
 
         #Interact with the PyBullet env
-        pos = self._to_pos(action.get('x_pos')+HALF_WIDTH, action.get('z_pos'))
+        # pos = self._to_pos(action.get('x_pos')+HALF_WIDTH, action.get('z_pos'))
+        pos = self._to_pos(action[0], action[1])
         output = self.assembly_env.interact(pos)
 
         #Calculate the reward
