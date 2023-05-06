@@ -129,12 +129,6 @@ class Assembly():
             self.p.disconnect()
         self._physics_client_id = -1
 
-    def reset(self):
-        #Remove all blocks in the environment
-
-        for id in self.block_list:
-            self.p.removeBody(id)
-
     def restore(self):
         # restore the environment if the block fails
         self.clear()
