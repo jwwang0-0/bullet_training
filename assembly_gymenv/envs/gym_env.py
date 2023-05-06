@@ -28,8 +28,7 @@ class AssemblyGymEnv(gym.Env):
 
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
-        # TODO
-        return np.random.randint(0, 1, size=(1000,25), dtype='int8')
+        return self.assembly_env.get_image()
     
     def _get_info(self):
         # return some auxiliary data
@@ -37,16 +36,13 @@ class AssemblyGymEnv(gym.Env):
         return {}
     
     def _check_termination(self, dict_check):
+        # infeasible or reach target
         # return True if a termination criteria is met
-        # criteria: collision or instable
-        check_collision = False if dict_check.get('collision') is None else False
-        check_instability = False if dict_check.get('instability') is None else False
-        ls_check = [check_collision, check_instability]
-        return np.sum(ls_check) > 0
+        return False
 
     def step(self, action): 
 
-        #Interact with the PyBullet env 
+        #Interact with the PyBullet env
         arg_action = [action.get('x_pos', 0), action.get('y_pos', 0), action.get('z_pos', 0)]
         output = self.assembly_env.interact(arg_action)
 

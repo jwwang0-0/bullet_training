@@ -46,29 +46,12 @@ class Assembly():
         self.sceneobj_list = []
         self._physics_client_id = -1
         self._renders = render
-        self.image = np.zeros((1000, 25))
+        self.image = np.zeros((1000, 25), dtype='int8')
         #TODO Implement a Graph in the future
 
         # create a physical client
-        if self._physics_client_id < 0:
-            if self._renders:
-                self._p = bc.BulletClient(connection_mode=p2.GUI)
-            else:
-                self._p = bc.BulletClient()
-            self._physics_client_id = self._p._client
-            p = self._p
-            p.resetSimulation()
+        self.create_bullet_client()
 
-            # Import Ground URDF
-            p.loadURDF(os.path.join(pybullet_data.getDataPath(), "plane.urdf"), [0, 0, 0])
-            
-            # Set Gravity Simulation
-            p.setGravity(0, 0, -9.8)
-            self.timeStep = t_step
-            p.setTimeStep(self.timeStep)
-            p.setRealTimeSimulation(0) #if it is "1" it will be locked
-        else:
-            self.clear()
         # TODO create a scene
         #self.boundry_condition()
 
@@ -82,7 +65,34 @@ class Assembly():
         # self.viewer = None
         # self._configure()
 
-    def boundry_condition():
+    def create_bullet_client(self):
+ 
+        if self._physics_client_id < 0:
+
+            if self._renders:
+                self.p = bc.BulletClient(connection_mode=p2.GUI)
+            else:
+                self.p = bc.BulletClient()
+
+            self._physics_client_id = self.p._client
+            self.p.resetSimulation()
+
+            # Import Ground URDF
+            self.p.loadURDF(os.path.join(pybullet_data.getDataPath(), "plane.urdf"), [0, 0, 0])
+            
+            # Set Gravity Simulation
+            self.p.setGravity(0, 0, -9.8)
+            self.timeStep = t_step
+            self.p.setTimeStep(self.timeStep)
+            self.p.setRealTimeSimulation(0) #if it is "1" it will be locked
+        else:
+            self.clear()
+
+
+    def get_image(self):
+        return self.image
+
+    def boundry_condition(self):
         #define the target, obstacle
         pass
 
@@ -91,23 +101,21 @@ class Assembly():
         self.sceneobj_list.clear()
         self.image = -1
         if self._physics_client_id >= 0:
-            self._p.disconnect()
+            self.p.disconnect()
         self._physics_client_id = -1
 
     def reset(self):
         #Remove all blocks in the environment
 
-        p = self._p
         for id in self.block_list:
-            p.removeBody(id)
+            self.p.removeBody(id)
 
     def restore(self):
         # restore the environment if the block fails
-        p = self._p
         self.clear()
         for block in self.block_list:
             assert isinstance(block,Block), f"block is not a Block instance"
-            id = p.loadURDF(os.path.join(DATA, "block.urdf"),
+            id = self.p.loadURDF(os.path.join(DATA, "block.urdf"),
                                 [block.pos[0], block.pos[1], block.pos[2]])
             block.id = id
             
@@ -115,18 +123,16 @@ class Assembly():
     def clear(self):
         #clear all blocks in the scene
         #but still remember the history and image 
-        p = self._p
         for block in self.block_list:
             assert isinstance(block,Block), f"block is not a Block instance"
-            p.removeBody(block.id)
+            self.p.removeBody(block.id)
 
     def _action(self, pos):
         # perform add block action in the physical environment
         # not doing simulation 
-        p = self._p
-        id = p.loadURDF(os.path.join(DATA, "block.urdf"),
+        id = self.p.loadURDF(os.path.join(DATA, "block.urdf"),
                             [pos[0], pos[1], pos[2]]) 
-        #print(p.getDynamicsInfo(id,-1))
+        #print(self.p.getDynamicsInfo(id,-1))
         block = Block(id=id,pos=pos)      
         self.block_list.append(block)
 
@@ -147,21 +153,16 @@ class Assembly():
         
         # Pybullet implementation
         # Need to be tested during simulation
-        # p.getOverlappingObjects()
+        # self.p.getOverlappingObjects()
         return None
-
-    def _get_env_output(self, pos):
-        # calculate the information about the environmnet
-        # then output the information/checks
-        p = self._p
-        info = {"collision": None, "robot": None, "instability":None}
-
-        info.update({"collision": self._check_collision(...)})
-
+    
+    def _check_robot(self):
 
         ############## TODO Step 1: Robot Check####################
 
+        return False
 
+    def _check_stability(self, param):
         ############## Step 2: Stabiltiy Check#####################
         # Pybullet simulation
         # If it is unstable, restore the environment
@@ -169,22 +170,22 @@ class Assembly():
         id = self.block_list[-1].id
         pos = self.block_list[-1].pos
         orien = self.block_list[-1].quaternion
-        # lspeed_0, aspeed_0 = speed_mag(p.getBaseVelocity(id))
+        # lspeed_0, aspeed_0 = speed_mag(self.p.getBaseVelocity(id))
         for i in range(240):
-            p.stepSimulation()
-        (pos2, orien2) = p.getBasePositionAndOrientation(id)
+            self.p.stepSimulation()
+        (pos2, orien2) = self.p.getBasePositionAndOrientation(id)
         d = distance(pos, pos2)
         o = distance(orien,orien2)
         if d > 0.05:
-            info["instability"] = True
+            param = True
             self.restore() 
         elif o > 0.1:
-            info["instability"] = True 
+            param = True 
             self.restore()            
         else:
-            info["instability"] = False
+            param = False
         #print(d,o)
-        # lspeed, aspeed = speed_mag(p.getBaseVelocity(id))
+        # lspeed, aspeed = speed_mag(self.p.getBaseVelocity(id))
         # a_l = (lspeed-lspeed_0) / t_step
         # a_a = (aspeed-aspeed_0) / t_step
         # Debug: Check the p,v,a
@@ -195,13 +196,36 @@ class Assembly():
         # print("Angular Acceleration",'{:.5f}'.format(a_a))
         # print("Orientation", orientation)
 
-
+        return param
+    
+    def _check_target(self):
         ############## TODO Step 3: Target Check###################
+        return None
+
+    def _get_env_output(self, ls_pos):
+        # calculate and output the information about the environmnet
+        info = {"collision": None, 
+                "robot": None, 
+                "instability":None
+                }
+
+        info.update({"collision": self._check_collision(ls_pos)})
+        info.update({"robot": self._check_robot(...)})
+        info.update({"instability": self._check_stability(info.get("instability"))})
+
         return info
+    
+    def _check_feasibility(self):
+        # criteria: collision or instable
+        # output True or False
+        return None
+    
+    def _update_image(self):
+        # if the new block is feasible, then update the image (i.e. state/observation)
+        return None
         
     def realtime(self):
-        p = self._p
-        p.setRealTimeSimulation(1)
+        self.p.setRealTimeSimulation(1)
 
 
     def interact(self, ls_pos):
@@ -211,5 +235,8 @@ class Assembly():
         output: a dictionary of checks
         """
         self._action(ls_pos)
-        return self._get_env_output(ls_pos)
+        output = self._get_env_output(ls_pos)
+        if self._check_feasibility:
+            self._update_image()
+        return output
     
