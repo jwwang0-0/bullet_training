@@ -79,7 +79,7 @@ class AssemblyGymEnv(gym.Env):
     def reset(self):
         #print("-----------reset simulation---------------")
         self.assembly_env.close()
-        target = self._get_observation()
+        target = self._sample_target_pos()
         self.assembly_env = Assembly(target, render=self.render)
         return self._get_observation()
     
