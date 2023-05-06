@@ -49,6 +49,7 @@ class Assembly():
         self._physics_client_id = -1
         self._renders = render
         self.image = np.zeros((1000, 25), dtype='int8')
+        self.complete = False
         # TODO Implement a Graph in the future
 
         # create a physical client
@@ -113,6 +114,8 @@ class Assembly():
             else: 
                 self.target_list.append(target_index)
                 self.image[target_index[0]][target_index[2]] = 2
+        
+        #TODO Update the pybullet environment to show the target
 
     def get_image(self):
         return self.image
@@ -225,7 +228,9 @@ class Assembly():
     
     def _check_target(self):
         ############## TODO Step 3: Target Check###################
-        return None
+        if self.complete == True :
+            return True            
+        return False
 
     def _get_env_output(self, pos):
         # calculate and output the information about the environmnet
@@ -251,8 +256,18 @@ class Assembly():
         stop = bool(stop)
         return not(stop)
     
-    def _update_image(self):
+    def _update_image(self,pos):
         # if the new block is feasible, then update the image (i.e. state/observation)
+        center_index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
+        for x in range(center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1):
+            if self.image[x][center_index[2]] == 0:
+                self.image[x][center_index[2]] = 1
+            elif self.image[x][center_index[2]] == -1:
+                raise Exception("obstacle check error")
+            elif self.image[x][center_index[2]] == 1:
+                raise Exception("collision check error")
+            elif self.image[x][center_index[2]] == 2:
+                self.complete = True
         return None
         
     def realtime(self):
@@ -268,7 +283,7 @@ class Assembly():
         self._action(pos)
         info = self._get_env_output(pos)
         if self._check_feasibility(info):
-            self._update_image()
+            self._update_image(pos)
             self._check_target()
         return info
     
