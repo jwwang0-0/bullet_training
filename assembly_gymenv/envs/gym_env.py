@@ -5,6 +5,10 @@ from gym import spaces
 from assembly_env import Assembly
 
 
+HALF_WIDTH = 80/2
+HALF_HEIGHT = 20
+
+
 class AssemblyGymEnv(gym.Env):
 
     #For rendering
@@ -12,39 +16,54 @@ class AssemblyGymEnv(gym.Env):
 
     def __init__(self, renders=None):
         
-        # Set-up bullet physics server (Need to be rechecked later)
-        # TODO: any parameters needed by init Assembly?
-        self.assembly_env = Assembly(render=renders)
-
         # Action Space 
-        self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000),
+        self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH, start=HALF_WIDTH),
                                          "z_pos":spaces.Discrete(25)})        
         
         # Observation Space, need the boundary information
-        self.observation_space = spaces.MultiBinary([1000,25])
+        self.observation_space = spaces.Dict({'image': spaces.MultiBinary([1000, 25])
+                                              ,'boundry': spaces.MultiDiscrete([1000, 25, 1000, 25])
+                                              })
 
-        # Keep a history of the assembled blocks, maybe not needed here
-        self.block_list = []
+        # Set-up bullet physics server (Need to be rechecked later)
+        boundry = ...
+        self.assembly_env = Assembly(self._boundry_to_pos(boundry), 
+                                     render=renders)
 
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
-        return self.assembly_env.get_image()
+        return {"image": self.assembly_env.get_image(),
+                "boundry": self.assembly_env.get_boundry()
+                }
     
     def _get_info(self):
         # return some auxiliary data
         # TODO: need to define
         return {}
     
-    def _check_termination(self, dict_check):
+    def _check_termination(self):
         # infeasible or reach target
         # return True if a termination criteria is met
         return False
+    
+    def _sample_to_posxy(self, sample):
+        return float(sample/1000)
+    
+    def _sample_to_posz(self, sample):
+        return (2* sample+1) * HALF_HEIGHT
+    
+    def _to_pos(self, sample_x, sample_z):
+        return [self._sample_to_posxy(sample_x), 0, self._sample_to_posz(sample_z)]
 
+    def _boundry_to_pos(self, boundry):       
+        return [self._to_pos(boundry[0], boundry[1]), 
+                self._to_pos(boundry[2], boundry[3])]
+    
     def step(self, action): 
 
         #Interact with the PyBullet env
-        arg_action = [action.get('x_pos', 0), action.get('y_pos', 0), action.get('z_pos', 0)]
-        output = self.assembly_env.interact(arg_action)
+        pos = self._to_pos(action.get('x_pos'), action.get('z_pos')))
+        output = self.assembly_env.interact(pos)
 
         #Calculate the reward
         param_material = -1
@@ -57,8 +76,8 @@ class AssemblyGymEnv(gym.Env):
         return self._get_observation(), reward, termination, self._get_info()
     
     def reset(self):
-        self.assembly_env.reset()       
         #print("-----------reset simulation---------------")
+        self.assembly_env.reset()       
         return self._get_observation()
     
     def render(self, mode='human', close=False):
@@ -100,7 +119,7 @@ class AssemblyGymEnv(gym.Env):
     
     # Close the Simulation 
     def close(self):
-        pass
+        self.assembly_env.close()
 
 if __name__ == "__main__":
     # 如果你安装了pytorch，则使用上面的，如果你安装了tensorflow，则使用from stable_baselines.common.env_checker import check_env

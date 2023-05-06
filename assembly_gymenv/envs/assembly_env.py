@@ -39,7 +39,7 @@ class Block():
 #Assembly Element
 class Assembly():
 
-    def __init__(self, render = False) -> None:
+    def __init__(self, ls_pos_boundry, render = False) -> None:
         # prepare the scene or the physical environment
 
         self.block_list = []
@@ -53,7 +53,7 @@ class Assembly():
         self.create_bullet_client()
 
         # TODO create a scene
-        #self.boundry_condition()
+        self.set_boundry(ls_pos_boundry)
 
         ## Set-up Renders
         # self._renders = renders
@@ -92,9 +92,13 @@ class Assembly():
     def get_image(self):
         return self.image
 
-    def boundry_condition(self):
-        #define the target, obstacle
+    def set_boundry(self, arr_boundry):
+        """input: list of pos"""
+        #define the target
         pass
+
+    def get_boundry(self):
+        return self.boundry
 
     def close(self):
         self.block_list.clear()
@@ -202,14 +206,14 @@ class Assembly():
         ############## TODO Step 3: Target Check###################
         return None
 
-    def _get_env_output(self, ls_pos):
+    def _get_env_output(self, pos):
         # calculate and output the information about the environmnet
         info = {"collision": None, 
                 "robot": None, 
                 "instability":None
                 }
 
-        info.update({"collision": self._check_collision(ls_pos)})
+        info.update({"collision": self._check_collision(pos)})
         info.update({"robot": self._check_robot(...)})
         info.update({"instability": self._check_stability(info.get("instability"))})
 
@@ -228,14 +232,14 @@ class Assembly():
         self.p.setRealTimeSimulation(1)
 
 
-    def interact(self, ls_pos):
+    def interact(self, pos):
         # perform actions in the physical environment
         # then, output the checks and distance
         """
         output: a dictionary of checks
         """
-        self._action(ls_pos)
-        output = self._get_env_output(ls_pos)
+        self._action(pos)
+        output = self._get_env_output(pos)
         if self._check_feasibility:
             self._update_image()
         return output
