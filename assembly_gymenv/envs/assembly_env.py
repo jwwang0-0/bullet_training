@@ -4,8 +4,8 @@ import numpy as np
 import pybullet as p2
 import pybullet_data
 from pybullet_utils import bullet_client as bc
-# HERE = os.path.dirname(__file__)
-DATA = "../DATA/"
+HERE = os.path.dirname(__file__)
+DATA = os.path.join(HERE, "..", "DATA")
 
 t_step = 1/240
 HALF_WIDTH = 40
