@@ -15,11 +15,12 @@ class AssemblyGymEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array'], "render_fps": 4}
 
     def __init__(self, renders=None):
+
+        self.render = renders
         
         # Action Space 
-        # self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH*2),
-        #                                  "z_pos":spaces.Discrete(25)})   
-        self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])     
+        self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH*2),
+                                         "z_pos":spaces.Discrete(25)})        
         
         # Observation Space, need the boundary information
         img_element = np.array([4]*1000*25).reshape((1000,25))
@@ -29,8 +30,9 @@ class AssemblyGymEnv(gym.Env):
         target = [[self._sample_to_posxy(498), 0, self._sample_to_posz(24)]] # a list of pos
         self.assembly_env = Assembly(target, render=renders)
 
-    def _sample_target_pos(self):       
-        pass
+    def _sample_target_pos(self):
+        # TODO: implement sampling
+        return [[self._sample_to_posxy(498), 0, self._sample_to_posz(24)]]
     
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
@@ -61,8 +63,7 @@ class AssemblyGymEnv(gym.Env):
     def step(self, action): 
 
         #Interact with the PyBullet env
-        # pos = self._to_pos(action.get('x_pos')+HALF_WIDTH, action.get('z_pos'))
-        pos = self._to_pos(action[0], action[1])
+        pos = self._to_pos(action.get('x_pos')+HALF_WIDTH, action.get('z_pos'))
         output = self.assembly_env.interact(pos)
 
         #Calculate the reward
@@ -77,7 +78,9 @@ class AssemblyGymEnv(gym.Env):
     
     def reset(self):
         #print("-----------reset simulation---------------")
-        self.assembly_env.reset()       
+        self.assembly_env.close()
+        target = self._get_observation()
+        self.assembly_env = Assembly(target, render=self.render)
         return self._get_observation()
     
     def render(self, mode='human', close=False):
