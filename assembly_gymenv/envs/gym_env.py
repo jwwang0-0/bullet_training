@@ -62,7 +62,7 @@ class AssemblyGymEnv(gym.Env):
     def step(self, action): 
 
         #Interact with the PyBullet env
-        pos = self._to_pos(action.get('x_pos'), action.get('z_pos')))
+        pos = self._to_pos(action.get('x_pos'), action.get('z_pos'))
         output = self.assembly_env.interact(pos)
 
         #Calculate the reward
