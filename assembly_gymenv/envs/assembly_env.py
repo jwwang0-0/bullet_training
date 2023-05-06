@@ -130,13 +130,7 @@ class Assembly():
         block = Block(id=id,pos=pos)      
         self.block_list.append(block)
 
-
-    def _get_env_output(self, pos):
-        # calculate the information about the environmnet
-        # then output the information/checks
-        p = self._p
-        info = {"collision": None, "robot": None, "instability":None}
-
+    def _check_collision(self, pos):
         #################Step 0: Collision Check#################
 
         # Mathmatrical Implementation
@@ -154,6 +148,16 @@ class Assembly():
         # Pybullet implementation
         # Need to be tested during simulation
         # p.getOverlappingObjects()
+        return None
+
+    def _get_env_output(self, pos):
+        # calculate the information about the environmnet
+        # then output the information/checks
+        p = self._p
+        info = {"collision": None, "robot": None, "instability":None}
+
+        info.update({"collision": self._check_collision(...)})
+
 
         ############## TODO Step 1: Robot Check####################
 
