@@ -1,0 +1,1 @@
+from assembly_gymenv.envs.gym_env import AssemblyGymEnv

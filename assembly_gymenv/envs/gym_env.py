@@ -2,7 +2,7 @@ import gym
 import numpy as np
 from gym import spaces
 
-from assembly_env import Assembly
+from assembly_gymenv.envs.assembly_env import Assembly
 
 
 HALF_WIDTH = 40
