@@ -8,7 +8,7 @@ from pybullet_utils import bullet_client as bc
 DATA = "../DATA/"
 
 t_step = 1/240
-HALF_WIDTH = 80/2
+HALF_WIDTH = 40
 HALF_HEIGHT = 20
 ##################################################
 #################Utility Function#################
@@ -166,7 +166,7 @@ class Assembly():
 
         # Mathmatrical Implementation
         # 2d image implementation
-        center_index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
+        center_index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]
 
         #check if the block is in the image bound
         if True == self._check_index([center_index[0]-HALF_WIDTH,0,round((pos[2]*1000-20)/40)]):
@@ -240,12 +240,12 @@ class Assembly():
                 }
 
         info.update({"collision": self._check_collision(pos)})
-        info.update({"robot": self._check_robot(...)})
+        info.update({"robot": self._check_robot()})
         info.update({"instability": self._check_stability()})
 
         return info
     
-    def _check_feasibility(info):
+    def _check_feasibility(self, info):
         # criteria: collision or instable
         # output True or False
         # True : Feasible

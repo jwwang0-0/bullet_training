@@ -5,7 +5,7 @@ from gym import spaces
 from assembly_env import Assembly
 
 
-HALF_WIDTH = 80/2
+HALF_WIDTH = 40
 HALF_HEIGHT = 20
 
 
@@ -38,7 +38,7 @@ class AssemblyGymEnv(gym.Env):
     def _get_info(self):
         # return some auxiliary data
         # TODO: need to define
-        return {}
+        return {'info': 0}
     
     def _check_termination(self, info_output):
         # return True if a infeasible or reach target
@@ -66,7 +66,7 @@ class AssemblyGymEnv(gym.Env):
         #Calculate the reward
         param_material = -1
         param_distance = 1
-        reward = param_material + param_distance * output.get('distance', np.inf)
+        reward = param_material + param_distance * output.get('distance', 0)
 
         #Check termination
         termination = self._check_termination(output)
