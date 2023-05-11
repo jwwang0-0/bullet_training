@@ -70,7 +70,7 @@ class AssemblyGymEnv(gym.Env):
 
         #Calculate the reward
         param_material = -1
-        param_distance = 1
+        param_distance = 25 # >=25
         reward = param_material + param_distance * output.get('distance', 0)
 
         #Check termination

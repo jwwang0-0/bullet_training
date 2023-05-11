@@ -48,6 +48,8 @@ class Assembly():
         self.sceneobj_list = []
         self._physics_client_id = -1
         self._renders = render
+
+        # pixel values for image: 1:target; 0:empty space; 0.5:bricks 
         self.image = np.zeros((1000, 25), dtype=np.int64)
         self.complete = False
         # TODO Implement a Graph in the future
