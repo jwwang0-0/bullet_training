@@ -59,6 +59,7 @@ class AssemblyGymEnv(gym.Env):
         return (2* sample+1) * HALF_HEIGHT /1000
     
     def _to_pos(self, sample_x, sample_z):
+        # Real valued coordinate, unit meter
         return [self._sample_to_posxy(sample_x), 0, self._sample_to_posz(sample_z)]
 
     def step(self, action): 
@@ -86,42 +87,9 @@ class AssemblyGymEnv(gym.Env):
         return self._get_observation()
     
     def render(self, mode='human', close=False):
-
-    # Copied from the example
-        if mode == "human":
-            self._renders = True
-        if mode != "rgb_array":
-            return np.array([])
-        base_pos=[0,0,0]
-        self._cam_dist = 2
-        self._cam_pitch = 0.3
-        self._cam_yaw = 0
-        if (self._physics_client_id>=0):
-            view_matrix = self._p.computeViewMatrixFromYawPitchRoll(
-                cameraTargetPosition=base_pos,
-                distance=self._cam_dist,
-                yaw=self._cam_yaw,
-                pitch=self._cam_pitch,
-                roll=0,
-                upAxisIndex=2)
-            proj_matrix = self._p.computeProjectionMatrixFOV(fov=60,
-                    aspect=float(self._render_width) /
-                    self._render_height,
-                    nearVal=0.1,
-                    farVal=100.0)
-            (_, _, px, _, _) = self._p.getCameraImage(
-                width=self._render_width,
-                height=self._render_height,
-                renderer=self._p.ER_BULLET_HARDWARE_OPENGL,
-                viewMatrix=view_matrix,
-                projectionMatrix=proj_matrix)
-        else:
-            px = np.array([[[255,255,255,255]]*self._render_width]*self._render_height, dtype=np.uint8)
-        rgb_array = np.array(px, dtype=np.uint8)
-        rgb_array = np.reshape(np.array(px), (self._render_height, self._render_width, -1))
-        rgb_array = rgb_array[:, :, :3]
-        return rgb_array
-    
+        # maybe take a picture at the termination
+        pass
+        
     # Close the Simulation 
     def close(self):
         self.assembly_env.close()
