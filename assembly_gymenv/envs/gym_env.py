@@ -12,8 +12,8 @@ from assembly_gymenv.envs.assembly_env import Assembly
 HALF_WIDTH = 40
 HALF_HEIGHT = 20
 
-RENDER_HEIGHT = 720
-RENDER_WIDTH = 960
+RENDER_HEIGHT = 200
+RENDER_WIDTH = 320
 
 IMG_PATH = '../img/'
 
@@ -143,7 +143,7 @@ class AssemblyGymEnv(gym.Env):
 
 if __name__ == "__main__":
     # 如果你安装了pytorch，则使用上面的，如果你安装了tensorflow，则使用from stable_baselines.common.env_checker import check_env
-    # from stable_baselines3.common.env_checker import check_env
-    from stable_baselines.common.env_checker import check_env 
+    from stable_baselines3.common.env_checker import check_env
+    # from stable_baselines.common.env_checker import check_env 
     env = AssemblyGymEnv(renders=False)
     check_env(env)
