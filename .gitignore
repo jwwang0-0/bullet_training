@@ -4,3 +4,4 @@
 assembly_gymenv/dev_examples/
 __pycache__/
 */__pycache__/
+*.png

@@ -50,7 +50,7 @@ class Assembly():
         self._renders = render
 
         # pixel values for image: 1:target; 0:empty space; 0.5:bricks 
-        self.image = np.zeros((1000, 25), dtype=np.int64)
+        self.image = np.zeros((1000, 1000), dtype=np.int64)
         self.complete = False
         # TODO Implement a Graph in the future
 

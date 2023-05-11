@@ -3,7 +3,7 @@ import time
 from assembly_env import Assembly
 
 
-a = Assembly([0.498, 0, 0.9], render = True)
+a = Assembly([[0.498, 0, 0.9]], render = True)
 shift = 0.04
 N=10
 for i in range(N):
