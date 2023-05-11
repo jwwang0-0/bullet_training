@@ -48,10 +48,9 @@ class Assembly():
         self.sceneobj_list = []
         self._physics_client_id = -1
         self._renders = render
-
-        # pixel values for image: 1:target; 0:empty space; 0.5:bricks 
-        self.image = np.zeros((1000, 25), dtype=np.int64)
+        self.image = np.zeros((1000, 1000), dtype=np.int64)
         self.complete = False
+        self.distance_list = []
         # TODO Implement a Graph in the future
 
         # create a physical client
@@ -97,31 +96,34 @@ class Assembly():
         #check if the input is out of image bound
         #TODO define the threashold in the future
         out_bound =  index[0] < 0 \
-                or index[0] > 999 \
+                or index[0] > 1000 \
                 or index[1] != 0 \
                 or index[2] < 0 \
-                or index[2] > 25
+                or index[2] > 1000
         out_bound = bool(out_bound) 
         return out_bound
 
     def set_boundry(self, target):
         """input: list of pos"""
         #define the target
-        #TODO define the threashold in the future
+        #Image convention: 0>Nothing -1>Obstacle 0.5>Structures 1>Target 
         self.target_list = []
         for pos in target:
-            target_index = [round(pos[0]*1000) , round(pos[1]*1000) , round((pos[2]*1000-20)/40)]
+            self.distance_list.append(2)
+            target_index = [round(pos[0]*1000) , round(pos[1]*1000) , round(pos[2]*1000)]
             if self._check_index(target_index) == True:
                 raise Exception("Boundry is not correctly defined")
             else: 
                 self.target_list.append(target_index)
-                self.image[target_index[0]][target_index[2]] = 2
-        
+                self.image[target_index[0]][target_index[2]] = 1
         #TODO Update the pybullet environment to show the target
 
     def get_image(self):
         return self.image
 
+######################################
+# Clean Related Functions
+######################################   
 
     def close(self):
         self.block_list.clear()
@@ -139,14 +141,17 @@ class Assembly():
             id = self.p.loadURDF(os.path.join(DATA, "block.urdf"),
                                 [block.pos[0], block.pos[1], block.pos[2]])
             block.id = id
-            
-
+         
     def clear(self):
         #clear all blocks in the scene
         #but still remember the history and image 
         for block in self.block_list:
             assert isinstance(block,Block), f"block is not a Block instance"
             self.p.removeBody(block.id)
+
+######################################
+# Interaction Related Functions
+######################################   
 
     def _action(self, pos):
         # perform add block action in the physical environment
@@ -158,22 +163,21 @@ class Assembly():
         self.block_list.append(block)
 
     def _check_collision(self, pos):
-        #################Step 0: Collision Check#################
-
         # Mathmatrical Implementation
         # 2d image implementation
-        center_index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]
+        center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]
 
         #check if the block is in the image bound
-        if True == self._check_index([center_index[0]-HALF_WIDTH,0,round((pos[2]*1000-20)/40)]):
+        if True == self._check_index([center_index[0] - HALF_WIDTH,0,round(pos[2]*1000)]):
             raise Exception("Block is out of bound")
-        if True == self._check_index([center_index[0] + HALF_WIDTH - 1,0,round((pos[2]*1000-20)/40)]):
+        if True == self._check_index([center_index[0] + HALF_WIDTH - 1,0,round(pos[2]*1000)]):
             raise Exception("Block is out of bound")
 
         # Check based on the image if there is collision
         for x in [center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1]:
-            if self.image[x][center_index[2]] == 1:
-                return True
+            for z in [center_index[2]-HALF_HEIGHT,center_index[2] + HALF_HEIGHT - 1]:
+                if self.image[x][z] == 0.5:
+                    return True
         return False
         
         # Pybullet implementation
@@ -221,12 +225,6 @@ class Assembly():
         # print("Orientation", orientation)
 
         return instable
-    
-    def _check_target(self):
-        ############## TODO Step 3: Target Check###################
-        if self.complete == True :
-            return True            
-        return False
 
     def _get_env_output(self, pos):
         # calculate and output the information about the environmnet
@@ -252,23 +250,35 @@ class Assembly():
         stop = bool(stop)
         return not(stop)
     
-    def _update_image(self,pos):
+    def _update_image_and_score(self,pos):
         # if the new block is feasible, then update the image (i.e. state/observation)
-        center_index = [round(pos[0]*1000) , 0 , round((pos[2]*1000-20)/40)]  
-        for x in range(center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1):
-            if self.image[x][center_index[2]] == 0:
-                self.image[x][center_index[2]] = 1
-            elif self.image[x][center_index[2]] == -1:
-                raise Exception("obstacle check error")
-            elif self.image[x][center_index[2]] == 1:
-                raise Exception("collision check error")
-            elif self.image[x][center_index[2]] == 2:
-                self.complete = True
-        return None
+        center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]  
+        for x in range(center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH):
+            for z in range(center_index[2]-HALF_HEIGHT , center_index[2] + HALF_HEIGHT):            
+                if self.image[x][z] == 0:
+                    self.image[x][z] = 0.5
+                elif self.image[x][z] == -1:
+                    raise Exception("obstacle check error")
+                elif self.image[x][z] == 0.5:
+                    raise Exception("collision check error")
+                elif self.image[x][z] == 1:
+                    ## TODO In the future if there is multiple target here need to be updated
+                    self.complete = True
         
-    def realtime(self):
-        self.p.setRealTimeSimulation(1)
+        #update score
+        for i, target in enumerate(self.target_list):
+            d = distance(target,center_index)
+            if d < self.distance_list[i]:
+                self.distance_list[i] = d
+                
+        return None
 
+    def _check_target(self):
+        #check if the robot has reach the target
+        ## TODO In the future if there is multiple target here need to be updated
+        if self.complete == True :
+            return True            
+        return False
 
     def interact(self, pos):
         # perform actions in the physical environment
@@ -279,7 +289,9 @@ class Assembly():
         self._action(pos)
         info = self._get_env_output(pos)
         if self._check_feasibility(info):
-            self._update_image(pos)
+            self._update_image_and_score(pos)
             self._check_target()
         return info
     
+    def realtime(self):
+        self.p.setRealTimeSimulation(1)    
