@@ -54,18 +54,21 @@ class AssemblyGymEnv(gym.Env):
     def _get_info(self):
         # return some auxiliary data
         # TODO: need to define
-        return {'info': 0}
+        return {'History of distance': self.dist_hist}
     
     def _check_termination(self, info_output):
         # return True if a infeasible or reach target
-        if not self.assembly_env._check_feasibility(info_output):
+        if not self.assembly_env.check_feasibility(info_output):
             return True
-        if self.assembly_env._check_target():
+        if self.assembly_env.check_target():
             return True
         return False
     
-    def _compute_dist_improve(self, curr_dist):
-        return None
+    def _compute_dist_improve(self, curr_dist, param):
+        if len(self.dist_hist) == 0:
+            return -curr_dist
+        else:
+            return (self.dist_hist[-1] - curr_dist) * param
     
     def _sample_to_posxy(self, sample):
         return float(sample/1000)
@@ -89,13 +92,13 @@ class AssemblyGymEnv(gym.Env):
         #Calculate the reward
         param_material = -1
         param_distance = 25 # >=25
-        # TODO: calulate distance delta
 
-        reward = param_material + param_distance * self._compute_dist_improve(dist)
+        dist = self.assembly_env.get_distance()
+        reward = param_material + self._compute_dist_improve(dist, param_distance)
 
         #Check termination
         termination = self._check_termination(output)
-        if termination:
+        if termination and (np.random.random() <= 0.2):
             #take a picture at the termination
             img_arr = self._take_rgb_arr()
             filename = time.ctime()
