@@ -26,6 +26,7 @@ class AssemblyGymEnv(gym.Env):
     def __init__(self, renders=None):
 
         self.render = renders
+        self.dist_hist = [] # a list of floats, previous distance
         
         # Action Space 
         # x: [0.04, 0.96]
@@ -63,6 +64,9 @@ class AssemblyGymEnv(gym.Env):
             return True
         return False
     
+    def _compute_dist_improve(self, curr_dist):
+        return None
+    
     def _sample_to_posxy(self, sample):
         return float(sample/1000)
     
@@ -86,7 +90,8 @@ class AssemblyGymEnv(gym.Env):
         param_material = -1
         param_distance = 25 # >=25
         # TODO: calulate distance delta
-        reward = param_material + param_distance * output.get('distance', 0)
+
+        reward = param_material + param_distance * self._compute_dist_improve(dist)
 
         #Check termination
         termination = self._check_termination(output)
