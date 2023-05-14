@@ -241,17 +241,6 @@ class Assembly():
 
         return info
     
-    def _check_feasibility(self, info):
-        # criteria: collision or instable
-        # output True or False
-        # True : Feasible
-        # False: infeasible
-        stop = info.get("collision")\
-            or info.get("robot") \
-            or info.get("instability")
-        stop = bool(stop)
-        return not(stop)
-    
     def _update_image_and_score(self,pos):
         # if the new block is feasible, then update the image (i.e. state/observation)
         center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]  
@@ -275,12 +264,31 @@ class Assembly():
                 
         return None
 
-    def _check_target(self):
+######################################
+# Public Functions for Env
+###################################### 
+
+    def get_distance(self):
+        # return self.distance
+        return self.distance_list[0]
+
+    def check_feasibility(self, info):
+        # criteria: collision or instable
+        # output True or False
+        # True : Feasible
+        # False: infeasible
+        stop = info.get("collision")\
+            or info.get("robot") \
+            or info.get("instability")
+        stop = bool(stop)
+        return not(stop)
+
+    def check_target(self):
         #check if the robot has reach the target
         ## TODO In the future if there is multiple target here need to be updated
         if self.complete == True :
             return True            
-        return False
+        return False    
 
     def interact(self, pos):
         # perform actions in the physical environment
@@ -290,9 +298,9 @@ class Assembly():
         """
         self._action(pos)
         info = self._get_env_output(pos)
-        if self._check_feasibility(info):
+        if self.check_feasibility(info):
             self._update_image_and_score(pos)
-            self._check_target()
+            self.check_target()
         return info
     
     def realtime(self):
