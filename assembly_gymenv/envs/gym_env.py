@@ -12,8 +12,14 @@ import torch
 from assembly_gymenv.envs.assembly_env import Assembly
 
 
-HALF_WIDTH = 40
-HALF_HEIGHT = 20
+HALF_WIDTH = 50
+HALF_HEIGHT = 25
+HEIGHT = HALF_HEIGHT*2
+
+BOUND_X_MIN = 0.05
+BOUND_X_MAX = 0.95
+BOUND_Z_MIN = 0.025
+BOUND_Z_MAX = 0.475
 
 RENDER_HEIGHT = 200
 RENDER_WIDTH = 320
@@ -34,8 +40,8 @@ class AssemblyGymEnv(gym.Env):
         
         # Action Space 
         # x: [0.04, 0.96]
-        self.action_space = spaces.Box(low=np.array([0.04, 0.0]), 
-                                       high=np.array([0.96, 0.4]))
+        self.action_space = spaces.Box(low=np.array([BOUND_X_MIN, BOUND_Z_MIN]), 
+                                       high=np.array([BOUND_X_MAX, BOUND_Z_MAX]))
         # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
@@ -88,8 +94,8 @@ class AssemblyGymEnv(gym.Env):
     
     def _sample_to_posz(self, sample):
         # center of the block at z-axis
-        out = (2* round(sample/0.04) + 1) * HALF_HEIGHT
-        assert out % 40 == 20, "Pos value at z-axis for PyBullet is incorrect"
+        out = (round(sample*1000/HEIGHT)*2+1)*HALF_HEIGHT
+        assert out % (HALF_HEIGHT*2) == HALF_HEIGHT, "Pos value at z-axis for PyBullet is incorrect"
         return out/1000
     
     def _to_pos(self, sample_x, sample_z):
@@ -101,9 +107,9 @@ class AssemblyGymEnv(gym.Env):
         #Interact with the PyBullet env
         
         action_x = (action[0]+2)/4
-        action_z = (action[1]+2)*0.1
-        action_x = np.clip(action_x, 0.04, 0.96)
-        action_z = np.clip(action_z, 0, 0.4)
+        action_z = (action[1]+1)*0.15
+        action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
+        action_z = np.clip(action_z, BOUND_Z_MIN, BOUND_Z_MAX)
 
         pos = self._to_pos(action_x, action_z)
         print('Pos: '+str(pos))
@@ -120,8 +126,8 @@ class AssemblyGymEnv(gym.Env):
         #Check termination
         termination = self._check_termination(output)
  
-        if termination and (np.random.random() <= self.pic_freq):
-        # if termination:
+        # if termination and (np.random.random() <= self.pic_freq):
+        if termination:
             print("Termination: {}" + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
