@@ -22,3 +22,7 @@ Stable baselines
 
 ​	https://stable-baselines.readthedocs.io/en/master/guide/install.html
 
+For RL algorithm
+
+   https://github.com/Khrylx/PyTorch-RL
+

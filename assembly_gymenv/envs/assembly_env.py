@@ -50,7 +50,7 @@ class Assembly():
         self._renders = render
 
         # pixel values for image: 1:target; 0:empty space; 0.5:bricks 
-        self.image = np.zeros((1000, 1000), dtype=np.int64)
+        self.image = np.zeros((1000, 1000), dtype=np.float32)
         self.complete = False
         self.distance_list = []
         # TODO Implement a Graph in the future
@@ -172,8 +172,10 @@ class Assembly():
         #check if the block is in the image bound
         if True == self._check_index([center_index[0] - HALF_WIDTH,0,round(pos[2]*1000)]):
             raise Exception("Block is out of bound")
+            # return True
         if True == self._check_index([center_index[0] + HALF_WIDTH - 1,0,round(pos[2]*1000)]):
             raise Exception("Block is out of bound")
+            # return True
 
         # Check based on the image if there is collision
         for x in [center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1]:
@@ -204,9 +206,9 @@ class Assembly():
         for i in range(240):
             self.p.stepSimulation()
         (pos2, orien2) = self.p.getBasePositionAndOrientation(id)
-        d = distance(pos, pos2)
+        dist = distance(pos, pos2)
         o = distance(orien,orien2)
-        if d > 0.05:
+        if dist > 0.05:
             instable = True
             self.restore() 
         elif o > 0.1:
@@ -258,9 +260,9 @@ class Assembly():
         
         #update score
         for i, target in enumerate(self.target_list):
-            d = distance(target,center_index)
-            if d < self.distance_list[i]:
-                self.distance_list[i] = d
+            dist = distance(target,center_index)/1000
+            if dist < self.distance_list[i]:
+                self.distance_list[i] = dist
                 
         return None
 

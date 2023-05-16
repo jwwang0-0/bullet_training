@@ -5,6 +5,9 @@ import pybullet
 import matplotlib.pyplot as plt
 import time
 import re
+import os
+import torch
+
 
 from assembly_gymenv.envs.assembly_env import Assembly
 
@@ -15,7 +18,8 @@ HALF_HEIGHT = 20
 RENDER_HEIGHT = 200
 RENDER_WIDTH = 320
 
-IMG_PATH = '../img/'
+HERE = os.path.dirname(__file__)
+IMG_PATH = os.path.join(HERE, "../", "img/")
 
 
 class AssemblyGymEnv(gym.Env):
@@ -23,33 +27,40 @@ class AssemblyGymEnv(gym.Env):
     #For rendering
     metadata = {'render.modes': ['human', 'rgb_array'], "render_fps": 4}
 
-    def __init__(self, renders=None):
+    def __init__(self, renders=None, pic_freq=0.005):
 
         self.render = renders
-        self.dist_hist = [] # a list of floats, previous distance
+        self.pic_freq = pic_freq
         
         # Action Space 
         # x: [0.04, 0.96]
-        # self.action_space = spaces.Dict({"x_pos":spaces.Discrete(1000-HALF_WIDTH*2),
-        #                                  "z_pos":spaces.Discrete(25)})
-        self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
+        self.action_space = spaces.Box(low=np.array([0.04, 0.0]), 
+                                       high=np.array([0.96, 0.4]))
+        # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
-        img_element = np.array([4]*1000*1000).reshape((1000,1000))
-        self.observation_space = spaces.MultiDiscrete(img_element)
+        self.observation_space = spaces.Box(low=np.zeros((1000, 1000)), 
+                                            high=np.add(0.1, np.ones((1000, 1000))))
 
         # Set-up bullet physics server, sample boundry
-        target = [[self._sample_to_posxy(498), 0, self._sample_to_posz(9)]] # a list of pos
+        target = [[0.498, 0, 0.38]] # a list of pos
         self.assembly_env = Assembly(target)
+
+        base_distance = np.sqrt(max(target[0][0]-0, 1-target[0][0])**2+target[0][-1]**2)
+        self.dist_hist = [base_distance] # a list of floats, previous distance
 
     def _sample_target_pos(self):
         # implement sampling
+        # TODO: if sampling update base_distance
         # return [[np.random.random(), 0, np.random.random()]]
-        return [[self._sample_to_posxy(498), 0, self._sample_to_posz(9)]]
+        return [[0.498, 0, 0.38]]
     
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
-        return self.assembly_env.get_image()
+        out = self.assembly_env.get_image()
+        noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
+        # noise = np.zeros(out.shape)
+        return np.add(out, noise)
     
     def _get_info(self):
         # return some auxiliary data
@@ -64,17 +75,20 @@ class AssemblyGymEnv(gym.Env):
             return True
         return False
     
-    def _compute_dist_improve(self, curr_dist, param):
-        if len(self.dist_hist) == 0:
-            return -curr_dist
+    def _compute_dist_improve(self, curr_dist, param, info_output, action_z):
+        if not self.assembly_env.check_feasibility(info_output):
+            return -param*action_z
+        # elif len(self.dist_hist) == 0:
+        #     return 0.02 * param
         else:
             return (self.dist_hist[-1] - curr_dist) * param
     
     def _sample_to_posxy(self, sample):
-        return float(sample/1000)
+        return round(sample, 3)
     
     def _sample_to_posz(self, sample):
-        out = (2* sample+1) * HALF_HEIGHT
+        # center of the block at z-axis
+        out = (2* round(sample/0.04) + 1) * HALF_HEIGHT
         assert out % 40 == 20, "Pos value at z-axis for PyBullet is incorrect"
         return out/1000
     
@@ -85,8 +99,14 @@ class AssemblyGymEnv(gym.Env):
     def step(self, action): 
 
         #Interact with the PyBullet env
-        # pos = self._to_pos(action.get('x_pos')+HALF_WIDTH, action.get('z_pos'))
-        pos = self._to_pos(action[0]+HALF_WIDTH, action[1])
+        
+        action_x = (action[0]+2)/4
+        action_z = (action[1]+2)*0.1
+        action_x = np.clip(action_x, 0.04, 0.96)
+        action_z = np.clip(action_z, 0, 0.4)
+
+        pos = self._to_pos(action_x, action_z)
+        print('Pos: '+str(pos))
         output = self.assembly_env.interact(pos)
 
         #Calculate the reward
@@ -94,18 +114,22 @@ class AssemblyGymEnv(gym.Env):
         param_distance = 25 # >=25
 
         dist = self.assembly_env.get_distance()
-        reward = param_material + self._compute_dist_improve(dist, param_distance)
+        reward = param_material + self._compute_dist_improve(
+            dist, param_distance, output, action_z)
 
         #Check termination
         termination = self._check_termination(output)
-        if termination and (np.random.random() <= 0.2):
+ 
+        if termination and (np.random.random() <= self.pic_freq):
+        # if termination:
+            print("Termination: {}" + str(output))
             #take a picture at the termination
-            img_arr = self._take_rgb_arr()
-            filename = time.ctime()
-            filename = filename.replace(':', '-')
-            plt.imshow(img_arr)
-            plt.savefig(IMG_PATH+filename+'.png')
-            plt.close()
+            # img_arr = self._take_rgb_arr()
+            # filename = time.ctime()
+            # filename = filename.replace(':', '-')
+            # plt.imshow(img_arr)
+            # plt.savefig(IMG_PATH+filename+'.png')
+            # plt.close()
 
         return self._get_observation(), reward, termination, self._get_info()
     
@@ -153,5 +177,5 @@ if __name__ == "__main__":
     # 如果你安装了pytorch，则使用上面的，如果你安装了tensorflow，则使用from stable_baselines.common.env_checker import check_env
     from stable_baselines3.common.env_checker import check_env
     # from stable_baselines.common.env_checker import check_env 
-    env = AssemblyGymEnv(renders=False)
+    env = AssemblyGymEnv(renders=False, pic_freq=0.5)
     check_env(env)
