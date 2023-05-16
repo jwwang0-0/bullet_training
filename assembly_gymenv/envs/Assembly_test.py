@@ -9,21 +9,14 @@ a = Assembly([[0.498, 0, 0.9]], render = True)
 shift = 0.04
 N=10
 
-pos = [0.576,0,0.02]
-a._action(pos)
-print(a._get_env_output(pos))
+pos = [0.576,0,0.025]
+a.interact(pos)
 
-pos = [0.393,0,0.02]
-a._action(pos)
-print(a._get_env_output(pos))
+pos = [0.6,0,0.7]
+a.interact(pos)
 
-pos = [0.66,0,0.06]
-a._action(pos)
-print(a._get_env_output(pos))
-
-pos = [0.349,0,0.06]
-a._action(pos)
-print(a._get_env_output(pos))
+pos = [0.7,0,0.4]
+a.interact(pos)
 # pos = [0.4,0.0,0.040]
 # a._action(pos)
 # print(a._get_env_output(pos))

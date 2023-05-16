@@ -40,8 +40,8 @@ class AssemblyGymEnv(gym.Env):
         
         # Action Space 
         # x: [0.04, 0.96]
-        self.action_space = spaces.Box(low=np.array([BOUND_X_MIN, BOUND_Z_MIN]), 
-                                       high=np.array([BOUND_X_MAX, BOUND_Z_MAX]))
+        self.action_space = spaces.Box(low=np.array([BOUND_X_MIN]), 
+                                       high=np.array([BOUND_X_MAX]))
         # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
@@ -92,29 +92,33 @@ class AssemblyGymEnv(gym.Env):
     def _sample_to_posxy(self, sample):
         return round(sample, 3)
     
-    def _sample_to_posz(self, sample):
-        # center of the block at z-axis
-        out = (round(sample*1000/HEIGHT)*2+1)*HALF_HEIGHT
-        assert out % (HALF_HEIGHT*2) == HALF_HEIGHT, "Pos value at z-axis for PyBullet is incorrect"
-        return out/1000
+    # def _sample_to_posz(self, sample):
+    #     # center of the block at z-axis
+    #     out = (round(sample*1000/HEIGHT)*2+1)*HALF_HEIGHT
+    #     assert out % (HALF_HEIGHT*2) == HALF_HEIGHT, "Pos value at z-axis for PyBullet is incorrect"
+    #     return out/1000
+
+    def _posz_to_sample(self,posz):
+        return (posz*1000/HALF_HEIGHT-1)*HEIGHT/1000
     
-    def _to_pos(self, sample_x, sample_z):
+    def _to_pos(self, sample_x):
         # Real valued coordinate, unit meter
-        return [self._sample_to_posxy(sample_x), 0, self._sample_to_posz(sample_z)]
+        return [self._sample_to_posxy(sample_x), 0, 0]
 
     def step(self, action): 
 
         #Interact with the PyBullet env
         
         action_x = (action[0]+2)/4
-        action_z = (action[1]+1)*0.15
+        #action_z = (action[1]+1)*0.15
         action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
-        action_z = np.clip(action_z, BOUND_Z_MIN, BOUND_Z_MAX)
+        #action_z = np.clip(action_z, BOUND_Z_MIN, BOUND_Z_MAX)
 
-        pos = self._to_pos(action_x, action_z)
-        print('Pos: '+str(pos))
-        output = self.assembly_env.interact(pos)
-
+        pos = self._to_pos(action_x)
+        action_z = self._posz_to_sample(pos[2])
+        
+        output, updated_pos = self.assembly_env.interact(pos)
+        print('Pos: '+str(updated_pos))
         #Calculate the reward
         param_material = -1
         param_distance = 25 # >=25
