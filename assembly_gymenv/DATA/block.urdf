@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <robot name="block_2">
-  <link name="block_2_base_link">
+  <link concave="no" name="block_2_base_link">
     <contact>
       <lateral_friction value="1.0"/>
       <spinning_friction value=".001"/>
     </contact>
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.3072"/>
-      <inertia ixx="0.00008192" ixy="0" ixz="0" iyy="0.0002048" iyz="0" izz="0.0002048"/>
-    </inertial>
+      <mass value="0.25"/>
+      <inertia ixx="0.00010416" ixy="0" ixz="0" iyy="0.0002604" iyz="0" izz="0.0002604"/>
+    </inertial> 
     <visual>
       <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <geometry>
-        <box size="0.08 0.04 0.04"/>
+        <box size="0.10 0.05 0.05"/>
       </geometry>
       <material name="blockmat">
         <color rgba="0.1 0.7 0.1 1"/>
@@ -22,7 +22,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <geometry>
-        <box size="0.08 0.04 0.04"/>
+        <box size="0.10 0.05 0.05"/>
       </geometry>
     </collision>
   </link>

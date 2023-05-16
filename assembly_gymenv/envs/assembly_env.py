@@ -4,12 +4,13 @@ import numpy as np
 import pybullet as p2
 import pybullet_data
 from pybullet_utils import bullet_client as bc
+from assembly_gymenv.envs.compas_bullet import CompasClient
 HERE = os.path.dirname(__file__)
 DATA = os.path.join(HERE, "..", "DATA")
 
 t_step = 1/240
-HALF_WIDTH = 40
-HALF_HEIGHT = 20
+HALF_WIDTH = 50
+HALF_HEIGHT = 25
 ##################################################
 #################Utility Function#################
 ##################################################
@@ -76,11 +77,13 @@ class Assembly():
         if self._physics_client_id < 0:
 
             if self._renders:
-                self.p = bc.BulletClient(connection_mode=p2.GUI)
+                #self.p = bc.BulletClient(connection_mode=p2.GUI)
+                self.p = CompasClient(connection_type='gui')
             else:
-                self.p = bc.BulletClient()
+                #self.p = bc.BulletClient()
+                self.p = CompasClient(connection_type='direct')
 
-            self._physics_client_id = self.p._client
+            self._physics_client_id = self.p.client_id
             self.p.resetSimulation()
 
             # Import Ground URDF
@@ -160,6 +163,8 @@ class Assembly():
         # not doing simulation 
         id = self.p.loadURDF(os.path.join(DATA, "block.urdf"),
                             [pos[0], pos[1], pos[2]]) 
+        #print(self.p.getBasePositionAndOrientation(id))
+        #self.p.resetBasePositionAndOrientation(id,[pos[0], pos[1], pos[2]],[0,0,0,1])
         #print(self.p.getDynamicsInfo(id,-1))
         block = Block(id=id,pos=pos)      
         self.block_list.append(block)
@@ -202,7 +207,7 @@ class Assembly():
         orien = self.block_list[-1].quaternion
         # lspeed_0, aspeed_0 = speed_mag(self.p.getBaseVelocity(id))
         for i in range(240):
-            self.p.stepSimulation()
+            self.p.step_simulation()
         (pos2, orien2) = self.p.getBasePositionAndOrientation(id)
         d = distance(pos, pos2)
         o = distance(orien,orien2)
@@ -258,9 +263,9 @@ class Assembly():
         
         #update score
         for i, target in enumerate(self.target_list):
-            d = distance(target,center_index)
-            if d < self.distance_list[i]:
-                self.distance_list[i] = d
+            dist = distance(target,center_index)
+            if dist < self.distance_list[i]:
+                self.distance_list[i] = dist
                 
         return None
 
