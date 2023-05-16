@@ -275,9 +275,11 @@ class Assembly():
 # Public Functions for Env
 ###################################### 
 
-    def get_distance(self):
-        # return self.distance
-        return self.distance_list[0]
+    def get_distance(self, pos):
+        dist_x = abs(pos[0] - self.target_list[0][0])
+        dist_z = abs(pos[-1] - self.target_list[0][-1])
+        return dist_x, dist_z
+        # return self.distance_list[0]
 
     def check_feasibility(self, info):
         # criteria: collision or instable

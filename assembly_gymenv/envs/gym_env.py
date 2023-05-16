@@ -52,8 +52,8 @@ class AssemblyGymEnv(gym.Env):
         target = [[0.498, 0, 0.38]] # a list of pos
         self.assembly_env = Assembly(target)
 
-        base_distance = np.sqrt(max(target[0][0]-0, 1-target[0][0])**2+target[0][-1]**2)
-        self.dist_hist = [base_distance] # a list of floats, previous distance
+        base_distance = max(target[0][0]-0, 1-target[0][0]), target[0][-1]
+        self.dist_hist = [base_distance] # a list of tuples, previous distance
 
     def _sample_target_pos(self):
         # implement sampling
@@ -81,13 +81,13 @@ class AssemblyGymEnv(gym.Env):
             return True
         return False
     
-    def _compute_dist_improve(self, curr_dist, param, info_output, action_z):
+    def _compute_dist_improve(self, dist_x, dist_z, param, info_output, action_z):
         if not self.assembly_env.check_feasibility(info_output):
             return -param*action_z
         # elif len(self.dist_hist) == 0:
         #     return 0.02 * param
         else:
-            return (self.dist_hist[-1] - curr_dist) * param
+            return 1/(self.dist_hist[-1] - curr_dist) * param
     
     def _sample_to_posxy(self, sample):
         return round(sample, 3)
@@ -119,9 +119,9 @@ class AssemblyGymEnv(gym.Env):
         param_material = -1
         param_distance = 25 # >=25
 
-        dist = self.assembly_env.get_distance()
+        dist_x, dist_z = self.assembly_env.get_distance(pos)
         reward = param_material + self._compute_dist_improve(
-            dist, param_distance, output, action_z)
+            dist_x, dist_z, param_distance, output, action_z)
 
         #Check termination
         termination = self._check_termination(output)
