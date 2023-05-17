@@ -52,8 +52,10 @@ class AssemblyGymEnv(gym.Env):
         target = [[0.498, 0, 0.38]] # a list of pos
         self.assembly_env = Assembly(target)
 
-        base_distance = max(target[0][0]-0, 1-target[0][0]), target[0][-1]
-        self.dist_hist = [base_distance] # a list of tuples, previous distance
+        self.base_distance = (max(target[0][0]-0, 1-target[0][0]), 
+                              target[0][-1], 
+                              self.assembly_env.distance_list[0])
+        self.dist_hist = [self.base_distance] # a list of tuples, previous distance
 
     def _sample_target_pos(self):
         # implement sampling
@@ -80,15 +82,18 @@ class AssemblyGymEnv(gym.Env):
         if self.assembly_env.check_target():
             return True
         return False
-    
-    def _compute_dist_improve(self, dist_x, dist_z, param, info_output, action_z):
-        if not self.assembly_env.check_feasibility(info_output):
-            return -param*action_z
-        # elif len(self.dist_hist) == 0:
-        #     return 0.02 * param
+        
+    def _compute_dist_improve(self, dist_x, dist_z, dist_direct):
+ 
+        if dist_direct >= self.dist_hist[-1][-1]:
+            return 0
         else:
             pre = self.dist_hist[-1]
-            res = 0.1/(pre[0]-dist_x) + 1/(pre[-1]-dist_z)
+            delta_z = pre[1]-dist_z if pre[1]!=dist_z else HALF_HEIGHT*2
+            delta_x = pre[0]-dist_x if pre[0]!=dist_x else HALF_WIDTH*2
+            res = 0.05/delta_x + 0.1/delta_z
+
+            self.dist_hist.append((dist_x, dist_z, dist_direct))
             return res
     
     def _sample_to_posxy(self, sample):
@@ -99,9 +104,6 @@ class AssemblyGymEnv(gym.Env):
     #     out = (round(sample*1000/HEIGHT)*2+1)*HALF_HEIGHT
     #     assert out % (HALF_HEIGHT*2) == HALF_HEIGHT, "Pos value at z-axis for PyBullet is incorrect"
     #     return out/1000
-
-    def _posz_to_sample(self,posz):
-        return (posz*1000/HALF_HEIGHT-1)*HEIGHT/1000
     
     def _to_pos(self, sample_x):
         # Real valued coordinate, unit meter
@@ -112,22 +114,21 @@ class AssemblyGymEnv(gym.Env):
         #Interact with the PyBullet env
         
         action_x = (action[0]+2)/4
-        #action_z = (action[1]+1)*0.15
         action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
-        #action_z = np.clip(action_z, BOUND_Z_MIN, BOUND_Z_MAX)
 
         pos = self._to_pos(action_x)
-        action_z = self._posz_to_sample(pos[2])
         
         output, updated_pos = self.assembly_env.interact(pos)
+        pos = updated_pos
         print('Pos: '+str(updated_pos))
+
         #Calculate the reward
         param_material = -1
         param_distance = 25 # >=25
 
-        dist_x, dist_z = self.assembly_env.get_distance(pos)
+        dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
         reward = param_material + self._compute_dist_improve(
-            dist_x, dist_z, param_distance, output, action_z)
+            dist_x, dist_z, dist_direct)
 
         #Check termination
         termination = self._check_termination(output)
@@ -150,6 +151,7 @@ class AssemblyGymEnv(gym.Env):
         self.assembly_env.close()
         target = self._sample_target_pos()
         self.assembly_env = Assembly(target, render=self.render)
+        self.dist_hist = [self.base_distance]
         return self._get_observation()
     
     def _take_rgb_arr(self):
