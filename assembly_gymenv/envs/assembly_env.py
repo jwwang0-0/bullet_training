@@ -135,7 +135,7 @@ class Assembly():
         self.sceneobj_list.clear()
         self.image = -1
         if self._physics_client_id >= 0:
-            self.p.__exit__()
+            self.p.disconnect()
         self._physics_client_id = -1
 
     def restore(self):
