@@ -293,10 +293,25 @@ class Assembly():
         
         #update score
         for i, target in enumerate(self.target_list):
-            dist = distance(target,center_index)/1000
+
+            if target[0] < center_index[0]-HALF_WIDTH:                
+                x = center_index[0]-HALF_WIDTH,
+            elif target[0] > center_index[0]+ HALF_WIDTH - 1:
+                x = center_index[0]+HALF_WIDTH - 1
+            else:
+                x = target[0]
+
+            if target[2] < center_index[2]-HALF_HEIGHT:                
+                z = center_index[2]-HALF_HEIGHT,
+            elif target[2] > center_index[2]+ HALF_HEIGHT - 1:
+                z = center_index[2]+HALF_HEIGHT
+            else:
+                z = target[2]   
+
+            dist = distance(target,[x,0,z])/1000
             if dist < self.distance_list[i]:
                 self.distance_list[i] = dist
-                
+
         return None
 
 ######################################

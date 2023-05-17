@@ -5,18 +5,30 @@ from assembly_gymenv.envs.compas_bullet import CompasClient
 HERE = os.path.dirname(__file__)
 DATA = os.path.join(HERE, "..", "DATA")
 
-a = Assembly([[0.498, 0, 0.9]], render = True)
+a = Assembly([[0.498, 0, 0.38]], render = True)
 shift = 0.04
 N=10
 
-pos = [0.576,0,0.025]
+pos = [0.498,0,0.025]
 a.interact(pos)
+print(a.distance_list[0])
 
-pos = [0.6,0,0.7]
+pos = [0.498,0,0.7]
 a.interact(pos)
+print(a.distance_list[0])
 
-pos = [0.7,0,0.4]
+pos = [0.498,0,0.4]
 a.interact(pos)
+print(a.distance_list[0])
+
+pos = [0.498,0,0.4]
+a.interact(pos)
+print(a.distance_list[0])
+
+pos = [0.498,0,0.4]
+a.interact(pos)
+print(a.distance_list[0])
+
 # pos = [0.4,0.0,0.040]
 # a._action(pos)
 # print(a._get_env_output(pos))
