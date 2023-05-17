@@ -81,10 +81,10 @@ class AssemblyGymEnv(gym.Env):
     def _check_termination(self, info_output):
         # return True if a infeasible or reach target
         if not self.assembly_env.check_feasibility(info_output):
-            return True
+            return True, 1
         if self.assembly_env.check_target():
-            return True
-        return False
+            return True, 0
+        return False, 0
         
     def _compute_dist_improve(self, dist_x, dist_z, dist_direct):
  
@@ -132,17 +132,18 @@ class AssemblyGymEnv(gym.Env):
 
         #Calculate the reward
         param_material = -1
-        param_distance = 25 # >=25
+        param_term = -1 # >=25
 
         dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
         reward = param_material + self._compute_dist_improve(
             dist_x, dist_z, dist_direct)
 
         #Check termination
-        termination = self._check_termination(output)
+        termination, reward_term = self._check_termination(output)
  
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
+            reward += param_term * reward_term
             print("Termination: {}" + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
