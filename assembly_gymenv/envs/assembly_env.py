@@ -168,30 +168,58 @@ class Assembly():
         #print(self.p.getDynamicsInfo(id,-1))
         block = Block(id=id,pos=pos)      
         self.block_list.append(block)
+        return pos
+    
+    def _action_Tetris(self, pos):
+        # perform add block action in the x|y dimension, assume z dimension is auto-detection
+        center_index = [round(pos[0]*1000) , 0 , 0]  
+        max_z = -1
+        for x in range(center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH):
+            for z in range(999,-1,-1):            
+                if self.image[x][z] == 0:
+                    pass
+                elif self.image[x][z] == -1:
+                    pass # later for obstacles
+                elif self.image[x][z] == 0.5:
+                    max_z = max(z,max_z)
+                    break
+                elif self.image[x][z] == 1:
+                    pass
+        z_center_index = max_z + HALF_HEIGHT + 1
+        pos = [pos[0], 0, z_center_index/1000]  
+        id = self.p.loadURDF(os.path.join(DATA, "block.urdf"),
+                            [pos[0], pos[1], pos[2]]) 
+        block = Block(id=id,pos=pos)      
+        self.block_list.append(block)
+        return pos
 
     def _check_collision(self, pos):
-        # Mathmatrical Implementation
-        # 2d image implementation
-        center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]
+        # # Mathmatrical Implementation
+        # # 2d image implementation
+        # center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]
 
-        #check if the block is in the image bound
-        if True == self._check_index([center_index[0] - HALF_WIDTH,0,round(pos[2]*1000)]):
-            raise Exception("Block is out of bound")
-            # return True
-        if True == self._check_index([center_index[0] + HALF_WIDTH - 1,0,round(pos[2]*1000)]):
-            raise Exception("Block is out of bound")
-            # return True
+        # #check if the block is in the image bound
+        # if True == self._check_index([center_index[0] - HALF_WIDTH,0,round(pos[2]*1000)]):
+        #     raise Exception("Block is out of bound")
+        #     # return True
+        # if True == self._check_index([center_index[0] + HALF_WIDTH - 1,0,round(pos[2]*1000)]):
+        #     raise Exception("Block is out of bound")
+        #     # return True
 
-        # Check based on the image if there is collision
-        for x in [center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1]:
-            for z in [center_index[2]-HALF_HEIGHT,center_index[2] + HALF_HEIGHT - 1]:
-                if self.image[x][z] == 0.5:
-                    return True
+        # # Check based on the image if there is collision
+        # for x in [center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH - 1]:
+        #     for z in [center_index[2]-HALF_HEIGHT,center_index[2] + HALF_HEIGHT - 1]:
+        #         if self.image[x][z] == 0.5:
+        #             return True
+
+
         return False
         
         # Pybullet implementation
         # Need to be tested during simulation
         # self.p.getOverlappingObjects()
+
+    
     
     def _check_robot(self):
 
@@ -305,12 +333,12 @@ class Assembly():
         """
         output: a dictionary of checks
         """
-        self._action(pos)
+        pos = self._action_Tetris(pos)
         info = self._get_env_output(pos)
         if self.check_feasibility(info):
             self._update_image_and_score(pos)
             self.check_target()
-        return info
+        return (info, pos)
     
     def realtime(self):
         self.p.setRealTimeSimulation(1)    
