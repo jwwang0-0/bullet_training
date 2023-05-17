@@ -111,29 +111,22 @@ class CompasClient(PyBulletClient):
         self._add_ids_to_robot_links(cached_robot)
 
     def resetSimulation(self):
-        with redirect_stdout():
-            return pybullet.resetSimulation(physicsClientId=self.client_id)        
+        return pybullet.resetSimulation(physicsClientId=self.client_id)        
 
     def loadURDF(self,path,pos):
-        with redirect_stdout():
-            return pybullet.loadURDF(path,pos,physicsClientId=self.client_id)     
+        return pybullet.loadURDF(path,pos,physicsClientId=self.client_id)     
 
     def setGravity(self,x,y,z):
-        with redirect_stdout():
-            return pybullet.setGravity(x,y,z,physicsClientId=self.client_id)   
+        return pybullet.setGravity(x,y,z,physicsClientId=self.client_id)   
 
     def setTimeStep(self,timeStep):
-        with redirect_stdout():
-            return pybullet.setTimeStep(timeStep,physicsClientId=self.client_id)
+        return pybullet.setTimeStep(timeStep,physicsClientId=self.client_id)
 
     def setRealTimeSimulation(self,num):
-        with redirect_stdout():
-            return pybullet.setRealTimeSimulation(num,physicsClientId=self.client_id)
+        return pybullet.setRealTimeSimulation(num,physicsClientId=self.client_id)
         
     def removeBody(self, object_id):
-        with redirect_stdout():
-            return pybullet.removeBody(object_id,physicsClientId=self.client_id)    
+        return pybullet.removeBody(object_id,physicsClientId=self.client_id)    
 
     def getBasePositionAndOrientation(self,object_id):
-        with redirect_stdout():
-            return pybullet.getBasePositionAndOrientation(object_id,physicsClientId=self.client_id)             
+        return pybullet.getBasePositionAndOrientation(object_id,physicsClientId=self.client_id)             
