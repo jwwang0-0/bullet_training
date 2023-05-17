@@ -27,6 +27,9 @@ RENDER_WIDTH = 320
 HERE = os.path.dirname(__file__)
 IMG_PATH = os.path.join(HERE, "../", "img/")
 
+global NUM_STEP
+NUM_STEP = 0
+
 
 class AssemblyGymEnv(gym.Env):
 
@@ -91,9 +94,11 @@ class AssemblyGymEnv(gym.Env):
             pre = self.dist_hist[-1]
             delta_z = pre[1]-dist_z if pre[1]!=dist_z else HALF_HEIGHT*2
             delta_x = pre[0]-dist_x if pre[0]!=dist_x else HALF_WIDTH*2
-            res = 0.05/delta_x + 0.1/delta_z
+            res = 10*delta_x + 0.1/delta_z
 
             self.dist_hist.append((dist_x, dist_z, dist_direct))
+            if res < -10:
+                breakpoint()
             return res
     
     def _sample_to_posxy(self, sample):
@@ -120,7 +125,10 @@ class AssemblyGymEnv(gym.Env):
         
         output, updated_pos = self.assembly_env.interact(pos)
         pos = updated_pos
-        print('Pos: '+str(updated_pos))
+        global NUM_STEP
+        NUM_STEP += 1
+        NUM_STEP = NUM_STEP % 128 
+        print(str(NUM_STEP) + ' Pos: '+str(updated_pos))
 
         #Calculate the reward
         param_material = -1
