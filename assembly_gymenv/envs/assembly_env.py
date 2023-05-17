@@ -276,7 +276,7 @@ class Assembly():
 
         return info
     
-    def _update_image_and_score(self,pos):
+    def _update_image(self,pos):
         # if the new block is feasible, then update the image (i.e. state/observation)
         center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]  
         for x in range(center_index[0]-HALF_WIDTH,center_index[0] + HALF_WIDTH):
@@ -290,8 +290,13 @@ class Assembly():
                 elif self.image[x][z] == 1:
                     ## TODO In the future if there is multiple target here need to be updated
                     self.complete = True
-        
+        return None
+
+    def _update_score(self,pos):
+
         #update score
+        
+        center_index = [round(pos[0]*1000) , 0 , round(pos[2]*1000)]  
         for i, target in enumerate(self.target_list):
 
             if target[0] < center_index[0]-HALF_WIDTH:                
@@ -307,7 +312,7 @@ class Assembly():
                 zv = center_index[2]+HALF_HEIGHT
             else:
                 zv = target[2]
-                
+
             dist = distance(target,[xv,0,zv])/1000
             if dist < self.distance_list[i]:
                 self.distance_list[i] = dist
@@ -350,8 +355,9 @@ class Assembly():
         """
         pos = self._action_Tetris(pos)
         info = self._get_env_output(pos)
+        self._update_image(pos)
+        self._update_score(pos)
         if self.check_feasibility(info):
-            self._update_image_and_score(pos)
             self.check_target()
         return (info, pos)
     
