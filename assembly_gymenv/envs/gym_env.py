@@ -87,7 +87,9 @@ class AssemblyGymEnv(gym.Env):
         # elif len(self.dist_hist) == 0:
         #     return 0.02 * param
         else:
-            return 1/(self.dist_hist[-1] - curr_dist) * param
+            pre = self.dist_hist[-1]
+            res = 0.1/(pre[0]-dist_x) + 1/(pre[-1]-dist_z)
+            return res
     
     def _sample_to_posxy(self, sample):
         return round(sample, 3)
