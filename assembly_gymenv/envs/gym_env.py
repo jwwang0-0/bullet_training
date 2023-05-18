@@ -69,8 +69,8 @@ class AssemblyGymEnv(gym.Env):
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
         out = self.assembly_env.get_image()
-        noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
-        # noise = np.zeros(out.shape)
+        # noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
+        noise = np.zeros(out.shape)
         return np.add(out, noise)
     
     def _get_info(self, pos):
