@@ -73,10 +73,11 @@ class AssemblyGymEnv(gym.Env):
         # noise = np.zeros(out.shape)
         return np.add(out, noise)
     
-    def _get_info(self):
+    def _get_info(self, pos):
         # return some auxiliary data
-        # TODO: need to define
-        return {'History of distance': self.dist_hist}
+        return {'max-height': round((pos[-1]+0.025)/0.05),
+                'pos': pos
+                }
     
     def _check_termination(self, info_output):
         # return True if a infeasible or reach target
@@ -153,7 +154,7 @@ class AssemblyGymEnv(gym.Env):
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
 
-        return self._get_observation(), reward, termination, self._get_info()
+        return self._get_observation(), reward, termination, self._get_info(updated_pos)
     
     def reset(self):
         #print("-----------reset simulation---------------")

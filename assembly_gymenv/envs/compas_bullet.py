@@ -48,8 +48,8 @@ class CompasClient(PyBulletClient):
         # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/vrminitaur.py#L7
         self._detect_display()
         options = self._compose_options(color, width, height)
-        with redirect_stdout():
-            self.client_id = pybullet.connect(const.CONNECTION_TYPE[self.connection_type], options=options)
+        #with redirect_stdout():
+        self.client_id = pybullet.connect(const.CONNECTION_TYPE[self.connection_type], options=options)
         if self.client_id < 0:
             raise Exception('Error in establishing connection with PyBullet.')
         if self.connection_type == 'gui':
