@@ -10,24 +10,16 @@ shift = 0.04
 N=10
 
 pos = [0.498,0,0.025]
-a.interact(pos)
+output, updated_pos = a.interact(pos)
 print(a.distance_list[0])
+print(a.get_distance(updated_pos))
 
 pos = [0.498,0,0.7]
-a.interact(pos)
+output, updated_pos = a.interact(pos)
 print(a.distance_list[0])
+print(a.get_distance(updated_pos))
 
-pos = [0.498,0,0.4]
-a.interact(pos)
-print(a.distance_list[0])
 
-pos = [0.498,0,0.4]
-a.interact(pos)
-print(a.distance_list[0])
-
-pos = [0.498,0,0.4]
-a.interact(pos)
-print(a.distance_list[0])
 
 # pos = [0.4,0.0,0.040]
 # a._action(pos)

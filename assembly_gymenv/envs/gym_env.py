@@ -69,8 +69,8 @@ class AssemblyGymEnv(gym.Env):
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
         out = self.assembly_env.get_image()
-        # noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
-        noise = np.zeros(out.shape)
+        noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
+        # noise = np.zeros(out.shape)
         return np.add(out, noise)
     
     def _get_info(self, pos):
@@ -95,7 +95,9 @@ class AssemblyGymEnv(gym.Env):
             pre = self.dist_hist[-1]
             delta_z = pre[1]-dist_z if pre[1]!=dist_z else HALF_HEIGHT*2
             delta_x = pre[0]-dist_x if pre[0]!=dist_x else HALF_WIDTH*2
-            res = 10*delta_x + 0.1/delta_z
+            delta_direct = pre[2] - dist_direct 
+            # res = 10*delta_x + 0.1/delta_z
+            res = 10 / (dist_direct + 0.001)
 
             self.dist_hist.append((dist_x, dist_z, dist_direct))
             if res < -10:
@@ -145,6 +147,8 @@ class AssemblyGymEnv(gym.Env):
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
             reward += param_term * reward_term
+            if self.assembly_env.check_target():
+                reward += 1000
             print("Termination: {}" + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
@@ -202,4 +206,26 @@ if __name__ == "__main__":
     from stable_baselines3.common.env_checker import check_env
     # from stable_baselines.common.env_checker import check_env 
     env = AssemblyGymEnv(renders=False, pic_freq=0.5)
-    check_env(env)
+    #check_env(env)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
+    _, reward, termination, info = env.step([-1])
+    print(reward,termination,info)
