@@ -48,15 +48,15 @@ class AssemblyGymEnv(gym.Env):
         # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
-        self.observation_space = spaces.Box(low=np.zeros((1000, 1000)), 
-                                            high=np.add(0.1, np.ones((1000, 1000))))
+        self.observation_space = spaces.Box(low=np.array([BOUND_X_MIN, BOUND_Z_MIN]), 
+                                            high=np.array([BOUND_X_MAX, BOUND_Z_MAX]))
 
         # Set-up bullet physics server, sample boundry
-        target = [[0.498, 0, 0.38]] # a list of pos
-        self.assembly_env = Assembly(target)
+        self.target = [[0.498, 0, 0.38]] # a list of pos
+        self.assembly_env = Assembly(self.target)
 
-        self.base_distance = (max(target[0][0]-0, 1-target[0][0]), 
-                              target[0][-1], 
+        self.base_distance = (max(self.target[0][0]-0, 1-self.target[0][0]), 
+                              self.target[0][-1], 
                               self.assembly_env.distance_list[0])
         self.dist_hist = [self.base_distance] # a list of tuples, previous distance
 
@@ -66,12 +66,12 @@ class AssemblyGymEnv(gym.Env):
         # return [[np.random.random(), 0, np.random.random()]]
         return [[0.498, 0, 0.38]]
     
-    def _get_observation(self):
-        # return the occupancy grid as a boolean matrix
-        out = self.assembly_env.get_image()
-        noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
-        # noise = np.zeros(out.shape)
-        return np.add(out, noise)
+    def _get_observation(self, updated_pose=None):
+        # return the rurrent pose, else the target
+        if updated_pose==None:
+            return np.asarray([self.target[0][0], self.target[0][-1]], dtype=np.float32)
+        else:
+            return np.asarray([updated_pose[0], updated_pose[-1]], dtype=np.float32)
     
     def _get_info(self, pos):
         # return some auxiliary data
@@ -154,7 +154,7 @@ class AssemblyGymEnv(gym.Env):
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
 
-        return self._get_observation(), reward, termination, self._get_info(updated_pos)
+        return self._get_observation(updated_pos), reward, termination, self._get_info(updated_pos)
     
     def reset(self):
         #print("-----------reset simulation---------------")
