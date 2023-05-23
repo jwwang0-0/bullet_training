@@ -61,8 +61,6 @@ class AssemblyGymEnv(gym.Env):
         self.dist_hist = [self.base_distance] # a list of tuples, previous distance
 
     def _sample_target_pos(self):
-        # implement sampling
-        # TODO: if sampling update base_distance
         # return [[np.random.random(), 0, np.random.random()]]
         return [[0.498, 0, 0.38]]
     
@@ -133,7 +131,7 @@ class AssemblyGymEnv(gym.Env):
 
         #Calculate the reward
         param_material = -1
-        param_term = -1 # >=25
+        param_term = -1
 
         dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
         reward = param_material + self._compute_dist_improve(
