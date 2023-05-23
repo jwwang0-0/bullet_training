@@ -62,8 +62,9 @@ class AssemblyGymEnv(gym.Env):
 
     def _sample_target_pos(self):
         # implement sampling
-        # TODO: if sampling update base_distance
-        return [[min(np.random.random(),0.999), 0, np.random.random()/2]]
+        return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
+                 0, 
+                 np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
         # return [[0.498, 0, 0.38]]
     
     def _get_observation(self):
