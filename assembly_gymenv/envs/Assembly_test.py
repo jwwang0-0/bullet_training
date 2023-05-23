@@ -35,8 +35,8 @@ time.sleep(5)
 
 # Gofa
 
-# print("Check",os.path.isfile(os.path.join(DATA, "abb_crb15000_dual_support/urdf/crb15000_5_95_macro.xacro")))
-# gofaId = a.p.loadURDF(os.path.join(DATA, "abb_crb15000_dual_support/urdf/","abb_crb15000_dual_cell.urdf"), [0.5, 0.6, 0])
+print("Check",os.path.isfile(os.path.join(DATA, "abb_crb15000_dual_support/urdf/crb15000_5_95_macro.xacro")))
+gofaId = a.p.loadURDF(os.path.join(DATA, "abb_crb15000_dual_support/urdf/","abb_crb15000_dual_cell.urdf"), [0.5, 0.6, 0])
 # a.p.resetBasePositionAndOrientation(gofaId, [0, 0, 0], [0, 0, 0, 1])
 
 
