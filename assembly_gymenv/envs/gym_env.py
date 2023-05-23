@@ -60,6 +60,8 @@ class AssemblyGymEnv(gym.Env):
                               self.assembly_env.distance_list[0])
         self.dist_hist = [self.base_distance] # a list of tuples, previous distance
 
+        self.obs_hist = [[self.target[0][0], self.target[0][-1]]]
+
     def _sample_target_pos(self):
         # return [[np.random.random(), 0, np.random.random()]]
         return [[0.498, 0, 0.38]]
@@ -67,7 +69,7 @@ class AssemblyGymEnv(gym.Env):
     def _get_observation(self, updated_pose=None):
         # return the rurrent pose, else the target
         if updated_pose==None:
-            return np.asarray([self.target[0][0], self.target[0][-1]], dtype=np.float32)
+            return np.asarray(..., dtype=np.float32)
         else:
             return np.asarray([updated_pose[0], updated_pose[-1]], dtype=np.float32)
     
