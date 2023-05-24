@@ -44,13 +44,14 @@ class AssemblyGymEnv(gym.Env):
         # Action Space 
         # x: [0.04, 0.96]
         self.action_space = spaces.Box(low=np.array([BOUND_X_MIN]), 
-                                       high=np.array([BOUND_X_MAX]))
+                                       high=np.array([BOUND_X_MAX]),dtype=np.float32)
         # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
-        self.observation_space = spaces.Box(low=np.zeros((1000, 1000)), 
-                                            high=np.add(0.1, np.ones((1000, 1000))))
-
+        # self.observation_space = spaces.Box(low=np.zeros((1000, 1000)), 
+        #                                     high=np.add(0.1, np.ones((1000, 1000))))
+        self.observation_space = spaces.Box(
+                low=-1, high=1, dtype=np.int8, shape=(100,100))
         # Set-up bullet physics server, sample boundry
         target = self._sample_target_pos() # a list of pos
         self.assembly_env = Assembly(target)
@@ -69,9 +70,13 @@ class AssemblyGymEnv(gym.Env):
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
         out = self.assembly_env.get_image()
-        noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
-        # noise = np.zeros(out.shape)
-        return np.add(out, noise)
+        out = (out * 2)-1
+        mask = torch.nn.MaxPool2d(kernel_size = 10, stride=10)
+        out_pool = mask(torch.from_numpy(out).unsqueeze(0))
+        # noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
+        #noise = np.zeros(out.shape)
+        out = (out_pool.squeeze().numpy()).astype(np.int8)
+        return out
     
     def _get_info(self, pos):
         # return some auxiliary data
@@ -120,9 +125,9 @@ class AssemblyGymEnv(gym.Env):
     def step(self, action): 
 
         #Interact with the PyBullet env
-        
-        action_x = (action[0]+2)/4
-        action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
+        print("sampled actions", action)
+        action_x = action[0]
+        # action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
 
         pos = self._to_pos(action_x)
         
@@ -137,12 +142,16 @@ class AssemblyGymEnv(gym.Env):
         param_material = -1
         param_term = -1 # >=25
 
-        dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
-        reward = param_material + self._compute_dist_improve(
-            dist_x, dist_z, dist_direct)
-
-        #Check termination
-        termination, reward_term = self._check_termination(output)
+        if updated_pos != None:
+            dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
+            reward = param_material + self._compute_dist_improve(
+                dist_x, dist_z, dist_direct)
+            #Check termination
+            termination, reward_term = self._check_termination(output)
+        else:
+            reward = -1
+            termination = True
+            reward_term = 1
  
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
@@ -206,26 +215,8 @@ if __name__ == "__main__":
     from stable_baselines3.common.env_checker import check_env
     # from stable_baselines.common.env_checker import check_env 
     env = AssemblyGymEnv(renders=False, pic_freq=0.5)
-    #check_env(env)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
-    _, reward, termination, info = env.step([-1])
-    print(reward,termination,info)
+    check_env(env)
+    # _, reward, termination, info = env.step([-2])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-2])
+    # print(reward,termination,info)

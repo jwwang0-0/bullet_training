@@ -11,6 +11,11 @@ DATA = os.path.join(HERE, "..", "DATA")
 t_step = 1/240
 HALF_WIDTH = 50
 HALF_HEIGHT = 25
+
+BOUND_X_MIN = 0.05
+BOUND_X_MAX = 0.95
+BOUND_Z_MIN = 0.025
+BOUND_Z_MAX = 0.475
 ##################################################
 #################Utility Function#################
 ##################################################
@@ -346,6 +351,17 @@ class Assembly():
         if self.complete == True :
             return True            
         return False    
+    
+    def _check_bound(self, pos):
+        # check if position is out of bound
+        # True: Out of bound
+        # False: in bound
+        center_index_left = [round(pos[0]*1000)-HALF_WIDTH , round(pos[1]*1000) , round(pos[2]*1000)] 
+        center_index_right = [round(pos[0]*1000)+HALF_WIDTH-1 , round(pos[1]*1000) , round(pos[2]*1000)] 
+        out_bound = self._check_index(center_index_left) \
+                    or self._check_index(center_index_right) 
+        out_bound = bool (out_bound)
+        return out_bound
 
     def interact(self, pos):
         # perform actions in the physical environment
@@ -353,13 +369,16 @@ class Assembly():
         """
         output: a dictionary of checks
         """
-        pos = self._action_Tetris(pos)
-        info = self._get_env_output(pos)
-        self._update_image(pos)
-        self._update_score(pos)
-        if self.check_feasibility(info):
-            self.check_target()
-        return (info, pos)
+        if self._check_bound(pos) == False :
+            pos = self._action_Tetris(pos)
+            info = self._get_env_output(pos)
+            self._update_image(pos)
+            self._update_score(pos)
+            if self.check_feasibility(info):
+                self.check_target()
+            return (info, pos)
+        else:
+            return ({"out_bound":True}, None)
     
     def realtime(self):
         self.p.setRealTimeSimulation(1)    
