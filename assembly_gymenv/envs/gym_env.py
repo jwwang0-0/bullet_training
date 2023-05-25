@@ -50,7 +50,7 @@ class AssemblyGymEnv(gym.Env):
                                             high=np.array([BOUND_X_MAX, BOUND_Z_MAX]))
 
         # Set-up bullet physics server, sample boundry
-        self.target = [[0.498, 0, 0.38]] # a list of pos
+        self.target = self._sample_target_pos() # a list of pos
         self.assembly_env = Assembly(self.target)
 
         self.base_distance = (max(self.target[0][0]-0, 1-self.target[0][0]), 
@@ -61,8 +61,10 @@ class AssemblyGymEnv(gym.Env):
         self.obs_hist = [[self.target[0][0], self.target[0][-1]]]
 
     def _sample_target_pos(self):
-        # return [[np.random.random(), 0, np.random.random()]]
-        return [[0.498, 0, 0.38]]
+        # implement sampling
+        return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
+                 0, 
+                 np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
     
     def _get_observation(self, updated_pose=None):
         # return the rurrent pose, else the target
