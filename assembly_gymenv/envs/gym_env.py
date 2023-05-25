@@ -42,10 +42,8 @@ class AssemblyGymEnv(gym.Env):
         self.pic_freq = pic_freq
         
         # Action Space 
-        # x: [0.04, 0.96]
         self.action_space = spaces.Box(low=np.array([BOUND_X_MIN]), 
                                        high=np.array([BOUND_X_MAX]))
-        # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
         self.observation_space = spaces.Box(low=np.array([BOUND_X_MIN, BOUND_Z_MIN]), 
@@ -69,9 +67,10 @@ class AssemblyGymEnv(gym.Env):
     def _get_observation(self, updated_pose=None):
         # return the rurrent pose, else the target
         if updated_pose==None:
-            return np.asarray(..., dtype=np.float32)
+            self.obs_hist = [self.obs_hist[0]]
         else:
-            return np.asarray([updated_pose[0], updated_pose[-1]], dtype=np.float32)
+            self.obs_hist.append([updated_pose[0], updated_pose[-1]])
+        return np.asarray(self.obs_hist, dtype=np.float32)
     
     def _get_info(self, pos):
         # return some auxiliary data
@@ -93,13 +92,11 @@ class AssemblyGymEnv(gym.Env):
             return 0
         else:
             pre = self.dist_hist[-1]
-            delta_z = pre[1]-dist_z if pre[1]!=dist_z else HALF_HEIGHT*2
-            delta_x = pre[0]-dist_x if pre[0]!=dist_x else HALF_WIDTH*2
-            res = 10*delta_x + 0.1/delta_z
+            delta_z = pre[1]-dist_z
+            delta_x = pre[0]-dist_x
+            res = (delta_x + delta_z)*10
 
             self.dist_hist.append((dist_x, dist_z, dist_direct))
-            if res < -10:
-                breakpoint()
             return res
     
     def _sample_to_posxy(self, sample):
@@ -119,7 +116,7 @@ class AssemblyGymEnv(gym.Env):
 
         #Interact with the PyBullet env
         
-        action_x = (action[0]+2)/4
+        action_x = (action.flatten()[0]+2)/4
         action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
 
         pos = self._to_pos(action_x)
