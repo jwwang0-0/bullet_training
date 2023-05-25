@@ -122,7 +122,8 @@ class AssemblyGymEnv(gym.Env):
 
         #Interact with the PyBullet env
         
-        action_x = action.flatten()
+        action_x = action[0]
+        action_x = (action_x + 2)/4
 
         pos = self._to_pos(action_x)
         
@@ -167,8 +168,10 @@ class AssemblyGymEnv(gym.Env):
     def reset(self):
         #print("-----------reset simulation---------------")
         self.assembly_env.close()
-        target = self._sample_target_pos()
-        self.assembly_env = Assembly(target, render=self.render)
+        self.target = self._sample_target_pos()
+        print('Target pos: ' + str(self.target[0]))
+
+        self.assembly_env = Assembly(self.target, render=self.render)
         self.dist_hist = [self.base_distance]
         return self._get_observation()
     
