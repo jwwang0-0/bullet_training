@@ -67,12 +67,12 @@ class AssemblyGymEnv(gym.Env):
                  np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
         # return [[0.498, 0, 0.38]]
     
-    def _get_observation(self):
-        # return the occupancy grid as a boolean matrix
+    def _get_observation(self, instable=False):
+        # return the occupancy grid in matrix
         out = self.assembly_env.get_image()
         noise = np.random.uniform(low=0, high=0.1, size=out.shape).astype(np.float32)
-        # noise = np.zeros(out.shape)
-        return np.add(out, noise)
+        out = np.add(out, noise)
+        return {'image': out, 'label_instable': instable}
     
     def _get_info(self, pos):
         # return some auxiliary data
@@ -169,7 +169,7 @@ class AssemblyGymEnv(gym.Env):
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
 
-        return self._get_observation(), reward, termination, self._get_info(updated_pos)
+        return self._get_observation(instable=output.get('instability')), reward, termination, self._get_info(updated_pos)
     
     def reset(self):
         #print("-----------reset simulation---------------")
