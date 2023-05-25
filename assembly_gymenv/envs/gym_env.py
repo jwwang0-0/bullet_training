@@ -61,7 +61,6 @@ class AssemblyGymEnv(gym.Env):
         self.obs_hist = [[self.target[0][0], self.target[0][-1]]]
 
     def _sample_target_pos(self):
-        # implement sampling
         return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
                  0, 
                  np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
@@ -76,9 +75,14 @@ class AssemblyGymEnv(gym.Env):
     
     def _get_info(self, pos):
         # return some auxiliary data
-        return {'max-height': round((pos[-1]+0.025)/0.05),
-                'pos': pos
-                }
+        if pos != None :
+            return {'max-height': round((pos[-1]+0.025)/0.05),
+                    'pos': pos
+                    }
+        else:
+            return {'max-height': 0,
+                    'pos': [0,0,0]
+                    }
     
     def _check_termination(self, info_output):
         # return True if a infeasible or reach target
@@ -118,8 +122,7 @@ class AssemblyGymEnv(gym.Env):
 
         #Interact with the PyBullet env
         
-        action_x = (action.flatten()[0]+2)/4
-        action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
+        action_x = action.flatten()
 
         pos = self._to_pos(action_x)
         
@@ -132,18 +135,24 @@ class AssemblyGymEnv(gym.Env):
 
         #Calculate the reward
         param_material = -1
-        param_term = -1
+        param_term = -1 # >=25
+        if updated_pos != None:
+            dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
+            reward = param_material + self._compute_dist_improve(
+                dist_x, dist_z, dist_direct)
 
-        dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
-        reward = param_material + self._compute_dist_improve(
-            dist_x, dist_z, dist_direct)
-
-        #Check termination
-        termination, reward_term = self._check_termination(output)
+            #Check termination
+            termination, reward_term = self._check_termination(output)
+        else:
+            reward = -1
+            termination = True
+            reward_term = 1
  
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
             reward += param_term * reward_term
+            if self.assembly_env.check_target():
+                reward += 1000
             print("Termination: {}" + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
@@ -202,3 +211,25 @@ if __name__ == "__main__":
     # from stable_baselines.common.env_checker import check_env 
     env = AssemblyGymEnv(renders=False, pic_freq=0.5)
     check_env(env)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)
+    # _, reward, termination, info = env.step([-1])
+    # print(reward,termination,info)

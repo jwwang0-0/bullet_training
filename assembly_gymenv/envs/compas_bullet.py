@@ -129,4 +129,9 @@ class CompasClient(PyBulletClient):
         return pybullet.removeBody(object_id,physicsClientId=self.client_id)    
 
     def getBasePositionAndOrientation(self,object_id):
-        return pybullet.getBasePositionAndOrientation(object_id,physicsClientId=self.client_id)             
+        return pybullet.getBasePositionAndOrientation(object_id,physicsClientId=self.client_id)    
+
+    def disconnect(self):
+        """Disconnect from the PyBullet server.""" 
+        # with redirect_stdout():      
+        return pybullet.disconnect(physicsClientId=self.client_id)         

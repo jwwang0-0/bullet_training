@@ -10,24 +10,16 @@ shift = 0.04
 N=10
 
 pos = [0.498,0,0.025]
-a.interact(pos)
+output, updated_pos = a.interact(pos)
 print(a.distance_list[0])
+print(a.get_distance(updated_pos))
 
 pos = [0.498,0,0.7]
-a.interact(pos)
+output, updated_pos = a.interact(pos)
 print(a.distance_list[0])
+print(a.get_distance(updated_pos))
 
-pos = [0.498,0,0.4]
-a.interact(pos)
-print(a.distance_list[0])
 
-pos = [0.498,0,0.4]
-a.interact(pos)
-print(a.distance_list[0])
-
-pos = [0.498,0,0.4]
-a.interact(pos)
-print(a.distance_list[0])
 
 # pos = [0.4,0.0,0.040]
 # a._action(pos)
@@ -43,8 +35,8 @@ time.sleep(5)
 
 # Gofa
 
-# print("Check",os.path.isfile(os.path.join(DATA, "abb_crb15000_dual_support/urdf/crb15000_5_95_macro.xacro")))
-# gofaId = a.p.loadURDF(os.path.join(DATA, "abb_crb15000_dual_support/urdf/","abb_crb15000_dual_cell.urdf"), [0.5, 0.6, 0])
+print("Check",os.path.isfile(os.path.join(DATA, "abb_crb15000_dual_support/urdf/crb15000_5_95_macro.xacro")))
+gofaId = a.p.loadURDF(os.path.join(DATA, "abb_crb15000_dual_support/urdf/","abb_crb15000_dual_cell.urdf"), [0.5, 0.6, 0])
 # a.p.resetBasePositionAndOrientation(gofaId, [0, 0, 0], [0, 0, 0, 1])
 
 
