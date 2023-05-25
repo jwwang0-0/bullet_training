@@ -175,6 +175,7 @@ class AssemblyGymEnv(gym.Env):
         #print("-----------reset simulation---------------")
         self.assembly_env.close()
         target = self._sample_target_pos()
+        print('Target: ' + str(np.round(target[0], 3)))
         self.assembly_env = Assembly(target, render=self.render)
         self.dist_hist = [self.base_distance]
         return self._get_observation()
