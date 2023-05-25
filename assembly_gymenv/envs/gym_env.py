@@ -68,7 +68,7 @@ class AssemblyGymEnv(gym.Env):
     def _get_observation(self, updated_pose=None):
         # return the rurrent pose, else the target
         if updated_pose==None:
-            self.obs_hist = [self.obs_hist[0]]
+            self.obs_hist = [[self.target[0][0], self.target[0][-1]]]
         else:
             self.obs_hist.append([updated_pose[0], updated_pose[-1]])
         return np.asarray(self.obs_hist, dtype=np.float32)
@@ -169,7 +169,7 @@ class AssemblyGymEnv(gym.Env):
         #print("-----------reset simulation---------------")
         self.assembly_env.close()
         self.target = self._sample_target_pos()
-        print('Target pos: ' + str(self.target[0]))
+        print('Target pos: ' + str(np.round(self.target[0],3)))
 
         self.assembly_env = Assembly(self.target, render=self.render)
         self.dist_hist = [self.base_distance]
