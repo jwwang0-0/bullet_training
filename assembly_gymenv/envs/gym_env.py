@@ -94,17 +94,23 @@ class AssemblyGymEnv(gym.Env):
         
     def _compute_dist_improve(self, dist_x, dist_z, dist_direct):
  
-        if dist_direct >= self.dist_hist[-1][-1]:
-            return 0
-        else:
-            pre = self.dist_hist[-1]
-            delta_z = pre[1]-dist_z
-            delta_x = pre[0]-dist_x
-            res = (delta_x + delta_z)*10
+        # if dist_direct >= self.dist_hist[-1][-1]:
+        #     return 0
+        # else:
+        #     pre = self.dist_hist[-1]
+        #     delta_z = pre[1]-dist_z
+        #     delta_x = pre[0]-dist_x
+        #     res = (delta_x + delta_z)*10
 
-            self.dist_hist.append((dist_x, dist_z, dist_direct))
-            return res
-    
+        if len(self.dist_hist) == 1:
+            res = 1/(dist_x + 0.1)
+        else:
+            res = 1/( dist_direct + 0.05 )/len(self.dist_hist)
+        # print('===> Dist reward: '+ str(round(res, 3)))
+
+        self.dist_hist.append((dist_x, dist_z, dist_direct))
+        return res
+
     def _sample_to_posxy(self, sample):
         return round(sample, 3)
     
@@ -120,23 +126,17 @@ class AssemblyGymEnv(gym.Env):
 
     def step(self, action): 
 
-        #Interact with the PyBullet env
-        
-        action_x = action[0]
-        action_x = (action_x + 2)/4
-
-        pos = self._to_pos(action_x)
-        
+        #Interact with the PyBullet env       
+        action_x = action[0] + 0.5
+        # action_x = (action_x + 2)/4
+        pos = self._to_pos(action_x)        
         output, updated_pos = self.assembly_env.interact(pos)
         pos = updated_pos
-        global NUM_STEP
-        NUM_STEP += 1
-        NUM_STEP = NUM_STEP % 128 
-        print(str(NUM_STEP) + ' Pos: '+str(updated_pos))
 
         #Calculate the reward
-        param_material = -1
-        param_term = -1 # >=25
+        param_material = -0
+        param_term = -5
+
         if updated_pos != None:
             dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
             reward = param_material + self._compute_dist_improve(
@@ -145,16 +145,19 @@ class AssemblyGymEnv(gym.Env):
             #Check termination
             termination, reward_term = self._check_termination(output)
         else:
-            reward = -1
+            reward = -abs(action_x - self.target[0][0])
             termination = True
-            reward_term = 1
+            reward_term = 0
  
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
-            reward += param_term * reward_term
             if self.assembly_env.check_target():
-                reward += 1000
-            print("Termination: {}" + str(output))
+                # reward += 10
+                pass
+            else:
+                reward += param_term * reward_term
+
+            print("Termination: " + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
             # filename = time.ctime()
@@ -163,7 +166,9 @@ class AssemblyGymEnv(gym.Env):
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
 
-        return self._get_observation(updated_pos), reward, termination, self._get_info(updated_pos)
+        print('Pos: '+str(updated_pos) + ';\t Reward: ' + str(round(reward, 3)))
+
+        return self._get_observation(updated_pos), reward/10, termination, self._get_info(updated_pos)
     
     def reset(self):
         #print("-----------reset simulation---------------")
