@@ -19,7 +19,7 @@ HEIGHT = HALF_HEIGHT*2
 BOUND_X_MIN = 0.05
 BOUND_X_MAX = 0.95
 BOUND_Z_MIN = 0.025
-BOUND_Z_MAX = 0.475
+BOUND_Z_MAX = 0.175
 
 RENDER_HEIGHT = 200
 RENDER_WIDTH = 320
@@ -49,6 +49,10 @@ class AssemblyGymEnv(gym.Env):
         self.observation_space = spaces.Box(low=np.array([BOUND_X_MIN, BOUND_Z_MIN]), 
                                             high=np.array([BOUND_X_MAX, BOUND_Z_MAX]))
 
+        self.set_env_ceil()
+        self.set_env_block()
+        # self.above_ceil = 0
+
         # Set-up bullet physics server, sample boundry
         self.target = self._sample_target_pos() # a list of pos
         self.assembly_env = Assembly(self.target)
@@ -63,7 +67,7 @@ class AssemblyGymEnv(gym.Env):
     def _sample_target_pos(self):
         return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
                  0, 
-                 np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
+                 np.random.uniform(low=BOUND_Z_MIN, high=self.ceil)]]
     
     def _get_observation(self, updated_pose=None):
         # return the rurrent pose, else the target
@@ -85,27 +89,28 @@ class AssemblyGymEnv(gym.Env):
                     }
     
     def _check_termination(self, info_output):
-        # return True if a infeasible or reach target
+
         if not self.assembly_env.check_feasibility(info_output):
             return True, 1
         if self.assembly_env.check_target():
             return True, 0
+        if self.num_block <=0:
+            return True, 0
+        # if self.above_ceil >=2:
+        #     info_output.update({'too high': True})
+        #     return True, 1
+
         return False, 0
         
     def _compute_dist_improve(self, dist_x, dist_z, dist_direct):
  
-        # if dist_direct >= self.dist_hist[-1][-1]:
-        #     return 0
-        # else:
-        #     pre = self.dist_hist[-1]
-        #     delta_z = pre[1]-dist_z
-        #     delta_x = pre[0]-dist_x
-        #     res = (delta_x + delta_z)*10
-
         if len(self.dist_hist) == 1:
             res = 1/(dist_x + 0.1)
         else:
-            res = 1/( dist_direct + 0.05 )/len(self.dist_hist)
+            res_x = 1/(dist_x + 0.1)/len(self.dist_hist)
+            res_z = 1/(dist_z + 0.1)/len(self.dist_hist)
+            res_d = 1/( dist_direct + 0.05 )/len(self.dist_hist)
+            res = min(res_x, res_z, res_d)
         # print('===> Dist reward: '+ str(round(res, 3)))
 
         self.dist_hist.append((dist_x, dist_z, dist_direct))
@@ -123,6 +128,15 @@ class AssemblyGymEnv(gym.Env):
     def _to_pos(self, sample_x):
         # Real valued coordinate, unit meter
         return [self._sample_to_posxy(sample_x), 0, 0]
+    
+    def set_env_ceil(self, ceil=0.05):
+        self.ceil = ceil-0.01
+
+    def set_env_block(self, num_block=None):
+        if num_block != None:
+            self.num_block = num_block
+        else:
+            self.num_block = int(self.ceil/HEIGHT) + 2
 
     def step(self, action): 
 
@@ -131,33 +145,39 @@ class AssemblyGymEnv(gym.Env):
         # action_x = (action_x + 2)/4
         pos = self._to_pos(action_x)        
         output, updated_pos = self.assembly_env.interact(pos)
-        pos = updated_pos
 
         #Calculate the reward
         param_material = -0
         param_term = -5
 
-        if updated_pos != None:
+        if updated_pos == None:
+            reward = np.clip(-abs(action_x - self.target[0][0]), -10, 0)
+            termination = True
+            updated_pos = pos
+            reward_term = 0
+        else:
+            self.num_block -= 1
             dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
             reward = param_material + self._compute_dist_improve(
                 dist_x, dist_z, dist_direct)
-
+            
+            if updated_pos[-1] - 0.025 > self.ceil:
+                reward = -dist_z*10
+                # self.above_ceil += 1
+            
             #Check termination
             termination, reward_term = self._check_termination(output)
-        else:
-            reward = -abs(action_x - self.target[0][0])
-            termination = True
-            reward_term = 0
  
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
             if self.assembly_env.check_target():
-                # reward += 10
+                reward = 10/(len(self.dist_hist)-1)
+            elif reward_term == 0:
                 pass
             else:
-                reward += param_term * reward_term
+                reward = - 5 * abs(reward) - 5
+                reward = np.clip(reward, -10, 0)
 
-            print("Termination: " + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
             # filename = time.ctime()
@@ -166,15 +186,18 @@ class AssemblyGymEnv(gym.Env):
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
 
-        print('Pos: '+str(updated_pos) + ';\t Reward: ' + str(round(reward, 3)))
+        # print('Pos: {0: <15}'.format(str(updated_pos)) + ';\t Reward: ' + str(round(reward, 3)))
+        # if termination: print("Termination: {0:>60}".format(str(output)))
 
         return self._get_observation(updated_pos), reward/10, termination, self._get_info(updated_pos)
     
     def reset(self):
         #print("-----------reset simulation---------------")
+        # self.above_ceil = 0
+        self.set_env_block()
         self.assembly_env.close()
         self.target = self._sample_target_pos()
-        print('Target pos: ' + str(np.round(self.target[0],3)))
+        # print('{0:>10}'.format('Target pos: ') + str(np.round(self.target[0],3)))
 
         self.assembly_env = Assembly(self.target, render=self.render)
         self.dist_hist = [self.base_distance]
