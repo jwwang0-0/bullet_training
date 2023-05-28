@@ -63,9 +63,10 @@ class AssemblyGymEnv(gym.Env):
         self.obs_hist = [[self.target[0][0], self.target[0][-1]]]
 
     def _sample_target_pos(self):
-        return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
-                 0, 
-                 np.random.uniform(low=BOUND_Z_MIN, high=self.ceil)]]
+        return [[ 0.729, 0, 0.486 ]]
+        # return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
+        #          0, 
+        #          np.random.uniform(low=BOUND_Z_MIN, high=self.ceil)]]
     
     def _get_observation(self, updated_pose=None):
         # return the rurrent pose, else the target
@@ -89,13 +90,13 @@ class AssemblyGymEnv(gym.Env):
     def _check_termination(self, info_output, updated_pose):
 
         if updated_pose is None:
-            return True
+            return True, 0
         if not self.assembly_env.check_feasibility(info_output):
-            return True
+            return True, -1
         if self.assembly_env.check_target():
-            return True
+            return True, 1
 
-        return False
+        return False, 0
         
     def _compute_dist_improve(self, dist_x, dist_z, dist_direct):
         # not used
@@ -110,7 +111,7 @@ class AssemblyGymEnv(gym.Env):
         # Real valued coordinate, unit meter
         return [self._sample_to_posxy(sample_x), 0, 0]
     
-    def set_env_ceil(self, ceil=0.05):
+    def set_env_ceil(self, ceil=0.1):
         self.ceil = ceil-0.01
 
     def step(self, action): 
@@ -121,7 +122,7 @@ class AssemblyGymEnv(gym.Env):
         output, updated_pos = self.assembly_env.interact(pos)
 
         #Calculate the reward
-        term_volumn = np.power(0.5,len(self.obs_hist)) * self.target[0][-1]
+        term_volumn = 1/len(self.obs_hist)
         term_x = 1 / (1 + int( abs(pos[0]-self.target[0][0])/HALF_WIDTH ))
         if updated_pos == None:
             reward = - term_volumn * term_x
@@ -134,11 +135,14 @@ class AssemblyGymEnv(gym.Env):
         # breakpoint()
             
         #Check termination
-        termination = self._check_termination(output, updated_pos)
+        termination, reward_term = self._check_termination(output, updated_pos)
  
         # if termination and (np.random.random() <= self.pic_freq):
-        if termination and self.assembly_env.check_target():
-            reward += term_volumn
+        if termination:
+            if reward_term == 1:
+                reward += term_volumn
+            elif reward_term == -1:
+                reward = reward/2
 
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
@@ -148,10 +152,10 @@ class AssemblyGymEnv(gym.Env):
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
 
-        # print('Pos: {0: <15}'.format(str(updated_pos)) + ';\t Reward: ' + str(round(reward*20, 5)))
+        # print('Pos: {0: <15}'.format(str(updated_pos)) + ';\t Reward: ' + str(round(reward*2, 5)))
         # if termination: print("Termination: {0:>60}".format(str(output)))
 
-        return self._get_observation(updated_pos), reward*20, termination, self._get_info(updated_pos)
+        return self._get_observation(updated_pos), reward*2, termination, self._get_info(updated_pos)
     
     def reset(self):
 
