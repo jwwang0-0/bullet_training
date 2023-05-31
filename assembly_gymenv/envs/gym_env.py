@@ -42,23 +42,18 @@ class AssemblyGymEnv(gym.Env):
         self.pic_freq = pic_freq
         
         # Action Space 
-        # x: [0.04, 0.96]
         self.action_space = spaces.Box(low=np.array([BOUND_X_MIN]), 
                                        high=np.array([BOUND_X_MAX]))
-        # self.action_space = spaces.MultiDiscrete([1000-HALF_WIDTH*2, 25])
         
         # Observation Space, need the boundary information
         self.observation_space = spaces.Box(low=np.zeros((1000, 1000)), 
                                             high=np.add(0.1, np.ones((1000, 1000))))
 
         # Set-up bullet physics server, sample boundry
-        target = self._sample_target_pos() # a list of pos
-        self.assembly_env = Assembly(target)
+        self.target = self._sample_target_pos() # a list of pos
+        self.assembly_env = Assembly(self.target)
 
-        self.base_distance = (max(target[0][0]-0, 1-target[0][0]), 
-                              target[0][-1], 
-                              self.assembly_env.distance_list[0])
-        self.dist_hist = [self.base_distance] # a list of tuples, previous distance
+        self.n_step = 1
 
     def _sample_target_pos(self):
         # implement sampling
@@ -85,30 +80,17 @@ class AssemblyGymEnv(gym.Env):
                     'pos': [0,0,0]
                     }
     
-    def _check_termination(self, info_output):
-        # return True if a infeasible or reach target
-        if not self.assembly_env.check_feasibility(info_output):
-            return True, 1
-        if self.assembly_env.check_target():
-            return True, 0
-        return False, 0
-        
-    def _compute_dist_improve(self, dist_x, dist_z, dist_direct):
- 
-        if dist_direct >= self.dist_hist[-1][-1]:
-            return 0
-        else:
-            pre = self.dist_hist[-1]
-            delta_z = pre[1]-dist_z if pre[1]!=dist_z else HALF_HEIGHT*2
-            delta_x = pre[0]-dist_x if pre[0]!=dist_x else HALF_WIDTH*2
-            delta_direct = pre[2] - dist_direct 
-            # res = 10*delta_x + 0.1/delta_z
-            res = 10 / (dist_direct + 0.001)
+    def _check_termination(self, info_output, updated_pose):
 
-            self.dist_hist.append((dist_x, dist_z, dist_direct))
-            if res < -10:
-                breakpoint()
-            return res
+        if updated_pose is None:
+            return True, 0
+        if not self.assembly_env.check_feasibility(info_output):
+            return True, -1
+        if self.assembly_env.check_target():
+            return True, 1
+
+        return False, 0
+       
     
     def _sample_to_posxy(self, sample):
         return round(sample, 3)
@@ -130,21 +112,20 @@ class AssemblyGymEnv(gym.Env):
         pos = self._to_pos(action_x)
         
         output, updated_pos = self.assembly_env.interact(pos)
-        pos = updated_pos
-        print(' Pos: '+str(updated_pos))
 
         #Calculate the reward
-        term_volumn = 1/len(self.obs_hist)
+        term_volumn = 1/self.n_step
         term_x = 1 / (1 + int( abs(pos[0]-self.target[0][0])/HALF_WIDTH ))
         if updated_pos == None:
             reward = - term_volumn * term_x
 
         else:
             # dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
-            term_z = (updated_pos[-1]) / HEIGHT / len(self.obs_hist)
+            term_z = (updated_pos[-1]) / HEIGHT / self.n_step
             term_z = - term_z if ( updated_pos[-1]> self.target[0][-1]) else term_z
             reward = term_volumn * term_z * term_x
         # breakpoint()
+        self.n_step += 1
             
         #Check termination
         termination, reward_term = self._check_termination(output, updated_pos)
@@ -155,7 +136,7 @@ class AssemblyGymEnv(gym.Env):
                 reward += term_volumn
             elif reward_term == -1:
                 reward = reward/2
-            print("Termination: {}" + str(output))
+            print("Termination: " + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
             # filename = time.ctime()
@@ -163,15 +144,16 @@ class AssemblyGymEnv(gym.Env):
             # plt.imshow(img_arr)
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
+        print(' Pos: '+str(updated_pos) + " Reward: " + str(round(reward, 5)))
 
         return self._get_observation(), reward, termination, self._get_info(updated_pos)
     
     def reset(self):
-        #print("-----------reset simulation---------------")
         self.assembly_env.close()
-        target = self._sample_target_pos()
-        self.assembly_env = Assembly(target, render=self.render)
-        self.dist_hist = [self.base_distance]
+        self.target = self._sample_target_pos()
+        self.assembly_env = Assembly(self.target, render=self.render)
+
+        self.n_step = 1
         return self._get_observation()
     
     def _take_rgb_arr(self):
