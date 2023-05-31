@@ -12,8 +12,9 @@ import torch
 from assembly_gymenv.envs.assembly_env import Assembly
 
 
-HALF_WIDTH = 50
-HALF_HEIGHT = 25
+# unit in meter
+HALF_WIDTH = 0.05
+HALF_HEIGHT = 0.025
 HEIGHT = HALF_HEIGHT*2
 
 BOUND_X_MIN = 0.05
@@ -60,7 +61,7 @@ class AssemblyGymEnv(gym.Env):
         # return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
         #          0, 
         #          np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
-        return [[0.498, 0, 0.38]]
+        return [[0.639, 0, 0.583]]
     
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
@@ -144,9 +145,9 @@ class AssemblyGymEnv(gym.Env):
             # plt.imshow(img_arr)
             # plt.savefig(IMG_PATH+filename+'.png')
             # plt.close()
-        print(' Pos: '+str(updated_pos) + " Reward: " + str(round(reward, 5)))
+        print(' Pos: '+str(updated_pos) + " Reward: " + str(round(reward*2, 5)))
 
-        return self._get_observation(), reward, termination, self._get_info(updated_pos)
+        return self._get_observation(), reward*2, termination, self._get_info(updated_pos)
     
     def reset(self):
         self.assembly_env.close()

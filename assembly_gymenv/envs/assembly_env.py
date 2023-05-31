@@ -106,10 +106,10 @@ class Assembly():
         #check if the input is out of image bound
         #TODO define the threashold in the future
         out_bound =  index[0] < 0 \
-                or index[0] > 1000 \
+                or index[0] > 999 \
                 or index[1] != 0 \
                 or index[2] < 0 \
-                or index[2] > 1000
+                or index[2] > 999
         out_bound = bool(out_bound) 
         return out_bound
 
