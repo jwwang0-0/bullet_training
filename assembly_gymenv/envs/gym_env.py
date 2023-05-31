@@ -62,10 +62,10 @@ class AssemblyGymEnv(gym.Env):
 
     def _sample_target_pos(self):
         # implement sampling
-        return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
-                 0, 
-                 np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
-        # return [[0.498, 0, 0.38]]
+        # return [[np.random.uniform(low=BOUND_X_MIN, high=BOUND_X_MAX), 
+        #          0, 
+        #          np.random.uniform(low=BOUND_Z_MIN, high=BOUND_Z_MAX)]]
+        return [[0.498, 0, 0.38]]
     
     def _get_observation(self):
         # return the occupancy grid as a boolean matrix
@@ -125,41 +125,36 @@ class AssemblyGymEnv(gym.Env):
 
     def step(self, action): 
 
-        #Interact with the PyBullet env
-        
-        action_x = (action[0]+2)/4
-        #action_x = np.clip(action_x, BOUND_X_MIN, BOUND_X_MAX)
-
+        #Interact with the PyBullet env        
+        action_x = action[0]+0.5
         pos = self._to_pos(action_x)
         
         output, updated_pos = self.assembly_env.interact(pos)
         pos = updated_pos
-        global NUM_STEP
-        NUM_STEP += 1
-        NUM_STEP = NUM_STEP % 128 
-        print(str(NUM_STEP) + ' Pos: '+str(updated_pos))
+        print(' Pos: '+str(updated_pos))
 
         #Calculate the reward
-        param_material = -1
-        param_term = -1 # >=25
-        if updated_pos != None:
+        term_volumn = 1/len(self.obs_hist)
+        term_x = 1 / (1 + int( abs(pos[0]-self.target[0][0])/HALF_WIDTH ))
+        if updated_pos == None:
+            reward = - term_volumn * term_x
 
-            dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
-            reward = param_material + self._compute_dist_improve(
-                dist_x, dist_z, dist_direct)
-
-            #Check termination
-            termination, reward_term = self._check_termination(output)
         else:
-            reward = -1
-            termination = True
-            reward_term = 1
+            # dist_x, dist_z, dist_direct = self.assembly_env.get_distance(updated_pos)
+            term_z = (updated_pos[-1]) / HEIGHT / len(self.obs_hist)
+            term_z = - term_z if ( updated_pos[-1]> self.target[0][-1]) else term_z
+            reward = term_volumn * term_z * term_x
+        # breakpoint()
+            
+        #Check termination
+        termination, reward_term = self._check_termination(output, updated_pos)
  
         # if termination and (np.random.random() <= self.pic_freq):
         if termination:
-            reward += param_term * reward_term
-            if self.assembly_env.check_target():
-                reward += 1000
+            if reward_term == 1:
+                reward += term_volumn
+            elif reward_term == -1:
+                reward = reward/2
             print("Termination: {}" + str(output))
             #take a picture at the termination
             # img_arr = self._take_rgb_arr()
